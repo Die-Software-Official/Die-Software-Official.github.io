@@ -1,0 +1,1588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="DieSoftware is an independent game studio. Every game is a roll.">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>DieSoftware</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@200;300;500&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: studio page; a wireframe die (drawn from the DieSoftware logo) is pinned left and rolls to a new face for each of six sections on the right */
+:root{
+  --black:#000; --coal:#0d0c0c; --graphite:#1c1a1a; --line:#2e2a2a; --mute:#8d8583; --chalk:#ecebea;
+  --mark:#e3e3e3; --maroon:#5a0c11; --blood:#b8141c;
+  --f-display:Tomorrow, "Eurostile", "Arial Narrow", sans-serif;
+  --f-body:"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --die:min(240px,24vw);
+  --edge:calc(var(--die) * .052);   /* logo: stroke 14 on a 269-unit die */
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--black)}
+body{background:var(--black);color:var(--chalk);font:400 1.03rem/1.7 var(--f-body);padding-inline:16px;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--blood);outline-offset:3px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 22% var(--gy,50%),rgba(184,20,28,.13),transparent 42%);transition:background .8s}
+
+/* top bar */
+.bar{position:fixed;left:0;right:0;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:calc(14px + env(safe-area-inset-top,0px)) 20px 14px;background:linear-gradient(var(--black) 55%,transparent);font:500 .72rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase}
+.mark{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+.mark svg{height:18px;width:auto}
+.bar nav{display:flex;gap:1.4rem;color:var(--mute)}
+.bar nav a{text-decoration:none}
+.bar nav a:hover{color:var(--chalk)}
+
+/* intro gate: black screen, one button, then the logo plays and its D and E fold into the die */
+html.gate{overflow:hidden}
+#intro{position:fixed;inset:0;z-index:100;background:var(--black)}
+#intro #mark{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:0;pointer-events:none}
+#intro #mark *{transform-box:view-box;transform-origin:0 0}
+#intro .spr{fill:#e3e3e3;stroke:none}
+/* the gate: a breathing red pip; hover or tap it and the die draws itself round it on a short ledge; grab the die and flick it off screen to start */
+#gate{position:absolute;inset:0;isolation:isolate;touch-action:none;user-select:none;-webkit-user-select:none;transition:opacity .35s}
+#gate::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 50% 50%,rgba(184,20,28,.10),transparent 38%);opacity:.6;transition:opacity .8s}
+#gate.shown::before{opacity:1}
+#gate.gone::before{opacity:0}
+#intro.playing #gate{opacity:0;pointer-events:none}
+#gate .die{display:block;width:var(--s);height:var(--s);overflow:visible}
+#gate .die .body{fill:none;stroke:var(--mark);stroke-width:7;stroke-dasharray:1;stroke-dashoffset:1;opacity:0;transition:stroke-dashoffset .75s cubic-bezier(.65,0,.35,1),opacity .12s}
+#gate .die .pip{fill:var(--blood);transform-origin:50px 50px;animation:gatePip 2.4s ease-in-out infinite;filter:drop-shadow(0 0 5px rgba(184,20,28,.85))}
+#gate .die .halo{fill:none;stroke:var(--blood);stroke-width:1.5;transform-origin:50px 50px;animation:gateHalo 2.4s ease-out infinite;opacity:0}
+@keyframes gatePip{50%{transform:scale(1.35)}}
+@keyframes gateHalo{0%{transform:scale(.25);opacity:.7}70%{opacity:0}100%{transform:scale(1.2);opacity:0}}
+#gate.shown .die .body{stroke-dashoffset:0;opacity:1}
+#gate.shown .die .pip{animation:none;filter:drop-shadow(0 0 3px rgba(184,20,28,.6))}
+#gate.shown .die .halo{animation:none;opacity:0}
+.gdie{--s:64px;position:absolute;left:0;top:0;width:64px;height:64px;padding:0;border:0;background:none;color:inherit;cursor:pointer;will-change:transform;touch-action:none;z-index:2}
+#gate.shown .gdie{cursor:grab}
+#gate.dragging .gdie{cursor:grabbing}
+.gdie .die{transition:transform .25s}
+#gate.dragging .gdie .die{transform:scale(1.08);transition:transform .15s}
+.gledge{position:absolute;left:50%;width:var(--lw,140px);height:2px;margin-left:calc(var(--lw,140px) / -2);background:linear-gradient(90deg,transparent,var(--mark) 22%,var(--mark) 78%,transparent);opacity:0;transform:scaleX(0);transition:transform .6s .15s cubic-bezier(.2,.8,.3,1),opacity .4s .15s}
+#gate.shown .gledge{opacity:.4;transform:scaleX(1)}
+.gshadow{position:absolute;left:0;width:84px;height:14px;margin-top:-6px;border-radius:50%;background:radial-gradient(rgba(184,20,28,.6),transparent 70%);pointer-events:none;opacity:0}
+.gsay{position:absolute;left:0;right:0;text-align:center;font:500 .64rem var(--f-mono);letter-spacing:.32em;text-transform:uppercase;color:var(--mute);pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .4s .35s,transform .4s .35s}
+.gsay b{color:var(--chalk);font-weight:500}
+#gate.shown .gsay{opacity:1;transform:none}
+#gate.gone .gsay,#gate.gone .gledge{opacity:0;transition:opacity .3s}
+.gtrail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.gtrail line{stroke:var(--blood);stroke-linecap:round}
+.gflick{position:absolute;left:0;top:0;width:120px;height:90px;pointer-events:none;opacity:0;transition:opacity .5s;z-index:1}
+.gflick path{fill:none;stroke:var(--mute);stroke-width:1.5;stroke-dasharray:4 5}
+.gflick .head{fill:var(--mute);stroke:none}
+.gflick.on{opacity:.8}
+.gflick.on .arc{animation:gateMarch 1s linear infinite}
+@keyframes gateMarch{to{stroke-dashoffset:-18}}
+.gspark{position:absolute;left:0;top:0;height:3px;border-radius:2px;pointer-events:none;transform-origin:0 50%}
+.skip{position:absolute;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));font:500 .64rem var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--mute);background:none;border:0;padding:.5rem;cursor:pointer;opacity:.6;transition:opacity .4s;z-index:3}
+#intro.playing .skip{opacity:1}
+.skip{display:none!important}   /* no Skip button: while the intro plays, a tap, click, scroll or key press skips it */
+/* the gate's first prompt: if nobody has found the dot after a few seconds, a line under it says what to do,
+   and the dot's halo pulses bigger to draw the eye */
+.gask{position:absolute;left:0;right:0;text-align:center;font:500 .64rem var(--f-mono);letter-spacing:.32em;text-transform:uppercase;color:var(--mute);pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s}
+.gask b{color:var(--chalk);font-weight:500}
+#gate.ask .gask{opacity:1;transform:none}
+#gate.shown .gask,#gate.gone .gask{opacity:0;transition:opacity .25s}
+#gate.ask:not(.shown) .die .halo{animation:gateHaloBig 1.6s ease-out infinite}
+#gate.ask:not(.shown) .die .pip{animation:gatePip 1.6s ease-in-out infinite}
+@keyframes gateHaloBig{0%{transform:scale(.3);opacity:.9;stroke-width:2}75%{opacity:0}100%{transform:scale(1.9);opacity:0;stroke-width:1}}
+.skip:hover{color:var(--chalk)}
+html.gate .scene{opacity:0}
+html.gate .bar,html.gate .content,html.gate .readout,html.gate .shadow{opacity:0}
+.readout,.shadow{transition:opacity 1s ease}
+.bar,.content{transition:opacity 1s ease}
+.scene{transition:opacity .35s}
+
+.studio-title{font:200 clamp(2.2rem,4.6vw,4.2rem)/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;margin:0 0 .4rem}
+
+.layout{max-width:78rem;margin:0 auto;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:4rem}
+.stage{position:sticky;top:0;height:100vh;display:grid;place-items:center;align-self:start}
+.stage-inner{display:grid;justify-items:center;gap:2.4rem}
+
+/* wireframe die, after the logo: thin chalk edges, rounded corners, diamond pips */
+.scene{width:var(--die);height:var(--die);perspective:1000px}
+.cube{width:100%;height:100%;position:relative;transform-style:preserve-3d;transform:rotateX(var(--rx,-24deg)) rotateY(var(--ry,32deg)) rotateZ(var(--rz,0deg));transition:transform 1s cubic-bezier(.22,.9,.24,1)}
+.face{position:absolute;inset:0;border:var(--edge) solid var(--mark);border-radius:10.6%;background:var(--black);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:18%}
+.face i{width:calc(var(--die) * .076);aspect-ratio:1;background:var(--mark);transform:rotate(45deg);align-self:center;justify-self:center;visibility:hidden;border-radius:1px}
+.cube.lit .face.front i{background:var(--blood);box-shadow:0 0 14px rgba(184,20,28,.8)}
+.f1{transform:translateZ(calc(var(--die)/2))}
+.f6{transform:rotateY(180deg) translateZ(calc(var(--die)/2))}
+.f2{transform:rotateY(90deg) translateZ(calc(var(--die)/2))}
+.f5{transform:rotateY(-90deg) translateZ(calc(var(--die)/2))}
+.f3{transform:rotateX(90deg) translateZ(calc(var(--die)/2))}
+.f4{transform:rotateX(-90deg) translateZ(calc(var(--die)/2))}
+/* pip cells: 1 tl,2 tc,3 tr,4 ml,5 c,6 mr,7 bl,8 bc,9 br */
+.f1 i:nth-child(5),
+.f2 i:nth-child(1),.f2 i:nth-child(9),
+.f3 i:nth-child(1),.f3 i:nth-child(5),.f3 i:nth-child(9),
+.f4 i:nth-child(1),.f4 i:nth-child(3),.f4 i:nth-child(7),.f4 i:nth-child(9),
+.f5 i:nth-child(1),.f5 i:nth-child(3),.f5 i:nth-child(5),.f5 i:nth-child(7),.f5 i:nth-child(9),
+.f6 i:nth-child(1),.f6 i:nth-child(3),.f6 i:nth-child(4),.f6 i:nth-child(6),.f6 i:nth-child(7),.f6 i:nth-child(9){visibility:visible}
+.shadow{width:calc(var(--die)*.9);height:14px;border-radius:50%;background:radial-gradient(rgba(184,20,28,.35),transparent 70%);margin-top:-1.2rem}
+
+.readout{display:grid;grid-template-columns:auto auto;gap:.2rem 1.4rem;font:500 .7rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.readout b{font:300 2rem/1 var(--f-display);color:var(--blood);letter-spacing:0;grid-row:span 2;align-self:center;font-variant-numeric:tabular-nums}
+.readout span:last-child{color:var(--chalk)}
+
+/* content */
+.content{padding-block:4vh 18vh;min-width:0}
+.roll{min-height:76vh;display:flex;flex-direction:column;justify-content:center;gap:1.1rem;padding-block:4rem;border-top:1px solid var(--line);opacity:.38;transition:opacity .5s}
+.roll.active{opacity:1}
+.kick{font:500 .72rem var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--mute);display:flex;gap:.8rem;align-items:center}
+.kick b{color:var(--blood);font-weight:500}
+.roll h2{font:300 clamp(2rem,4.2vw,3.3rem)/1.04 var(--f-display);margin:0;text-wrap:balance;letter-spacing:.01em}
+.roll h2 em{font-style:normal;color:var(--blood)}
+.roll p{max-width:58ch;margin:0;color:#c3bcba}
+.draft{font:500 .58rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--line);color:var(--mute);padding:.15rem .45rem;align-self:flex-start}
+
+.principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:.6rem}
+.principles div{background:var(--coal);padding:1.2rem 1.2rem 1.3rem;min-width:0}
+.principles h3{font:500 .95rem var(--f-display);letter-spacing:.14em;text-transform:uppercase;margin:0 0 .4rem}
+.principles p{font-size:.93rem;margin:0}
+
+/* project slots */
+.slots{display:grid;gap:1rem;margin-top:.6rem}
+.slot{display:grid;grid-template-columns:5.5rem minmax(0,1fr);border:1px solid var(--line);background:var(--coal)}
+.slot .num{display:grid;place-items:center;border-right:1px solid var(--line);font:200 2rem var(--f-display);color:var(--mute)}
+.slot .body{padding:1.2rem 1.3rem;display:grid;gap:.45rem;min-width:0}
+.slot h3{font:500 1.35rem/1.1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;margin:0}
+.slot .meta{font:500 .66rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);display:flex;flex-wrap:wrap;gap:.5rem 1rem}
+.slot.live{border-color:var(--maroon)}
+.slot.live .num{color:var(--blood);border-color:var(--maroon)}
+.slot.live .meta .st{color:var(--blood)}
+.slot.locked{border-style:dashed;background:transparent}
+.slot.locked h3{color:var(--mute)}
+.tasks{display:grid;gap:1px;background:var(--line);margin-top:.5rem}
+.tasks div{background:var(--black);display:flex;justify-content:space-between;gap:1rem;padding:.6rem .1rem;font-size:.92rem}
+.tasks em{font:500 .62rem var(--f-mono);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);white-space:nowrap;align-self:center}
+.tasks em.hot{color:var(--blood)}
+
+.socials{display:flex;flex-wrap:wrap;gap:.6rem}
+.socials a{text-decoration:none;font:500 .82rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;padding:.85rem 1.2rem;border:1px solid var(--line);background:var(--coal);transition:border-color .2s,background .2s}
+.socials a:hover{border-color:var(--blood);background:var(--maroon)}
+footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding-block:3rem;border-top:1px solid var(--line);font:500 .68rem var(--f-mono);color:var(--mute);letter-spacing:.14em;text-transform:uppercase}
+
+@media (max-width:860px){
+  :root{--die:70px}
+  .bar nav{display:none}
+  .layout{grid-template-columns:minmax(0,1fr);gap:0}
+  .stage{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));right:14px;height:auto;z-index:20}
+  .stage-inner{gap:.6rem} .shadow{display:none}
+  .readout{grid-template-columns:auto;font-size:.52rem;justify-items:center;text-align:center}
+  .readout b{font-size:1.1rem;grid-row:auto}
+  .readout span:first-of-type{display:none}
+  .roll{min-height:0;padding-block:3.2rem;opacity:1;padding-right:0}
+  .roll .kick,.roll h2{padding-right:90px}
+  .studio-title{letter-spacing:.12em;padding-right:90px}
+  .slot{grid-template-columns:3.6rem minmax(0,1fr)}
+  .slot .num{font-size:1.5rem}
+}
+
+/* contact: a red-outlined button under the socials that opens an email to the studio, with the address written out
+   beside it for anyone without a mail app set up */
+.contact{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem 1.2rem;margin-top:.4rem}
+.contact-btn{text-decoration:none;font:500 .82rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;padding:.85rem 1.4rem;border:1px solid var(--blood);color:var(--chalk);background:var(--maroon);transition:background .2s,box-shadow .2s}
+.contact-btn:hover{background:var(--blood);box-shadow:0 0 18px rgba(184,20,28,.45)}
+
+/* socials as icons: square tiles with each platform's mark, a name tip on hover; contact: an envelope button
+   that opens an email, and a small copy button beside it that puts the address on the clipboard */
+.socials{gap:.55rem}
+.socials a{width:52px;height:52px;padding:0;display:grid;place-items:center;color:var(--chalk);border-radius:12px;position:relative;transition:border-color .2s,background .2s,transform .2s,color .2s}
+.socials a svg{width:22px;height:22px;fill:currentColor;transition:transform .2s}
+.socials a:hover,.socials a:focus-visible{border-color:var(--blood);background:var(--maroon);transform:translateY(-3px)}
+.socials a:hover svg{transform:scale(1.08)}
+.socials a::after{content:attr(title);position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);font:500 .56rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.socials a:hover::after,.socials a:focus-visible::after{opacity:1}
+.contact{display:flex;align-items:center;gap:.55rem;margin-top:1.4rem}
+.contact-btn{display:inline-flex;align-items:center;gap:.7rem;border-radius:12px;height:52px;padding:0 1.3rem}
+.contact-btn svg{width:20px;height:20px}
+.contact-copy{width:52px;height:52px;display:grid;place-items:center;border:1px solid var(--line);background:var(--coal);color:var(--mute);border-radius:12px;cursor:pointer;position:relative;transition:border-color .2s,color .2s,background .2s}
+.contact-copy svg{width:20px;height:20px}
+.contact-copy:hover,.contact-copy:focus-visible{border-color:var(--blood);color:var(--chalk)}
+.contact-copy .tip{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);font:500 .56rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--mute);white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.contact-copy:hover .tip,.contact-copy:focus-visible .tip,.contact-copy.done .tip{opacity:1}
+.contact-copy.done{border-color:var(--blood);color:var(--chalk)}
+.contact-copy.done .tip{color:var(--blood)}
+@media (prefers-reduced-motion:reduce){ .cube{transition:none} .roll{opacity:1} }
+
+/* ===== LAYOUT LAB: html[data-v] picks how the page behaves after the intro =====
+   a  current: die pinned beside the text, rolls to a new face for each section
+   b  scroll bar: a small die rides down the right edge as you scroll, rolling as it goes, turning to each section's number
+   c  chapters: no pinned die; the die lands as section 1's mark, and every section opens with its own die face that rolls in
+   d  tumble: the die tumbles from side to side between sections and the text swaps sides with it */
+
+/* the switcher */
+.lab{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px;background:rgba(13,12,12,.92);border:1px solid var(--line);font:500 .62rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;max-width:calc(100vw - 32px)}
+.lab span{color:var(--mute);padding:0 .4rem}
+.lab button{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--mute);background:none;border:1px solid transparent;padding:.55rem .7rem;cursor:pointer}
+.lab button:hover{color:var(--chalk)}
+.lab button[aria-pressed="true"]{color:var(--chalk);border-color:var(--maroon);background:var(--maroon)}
+.lab button b{color:var(--blood);font-weight:500;margin-right:.35rem}
+.lab button[aria-pressed="true"] b{color:var(--chalk)}
+html.gate .lab{opacity:0;pointer-events:none}
+.lab{transition:opacity .6s}
+
+/* ---- b: scroll-bar die ---- */
+html[data-v="b"]{--die:56px}
+html[data-v="b"] .layout{display:block;max-width:60rem}
+html[data-v="b"] .stage{position:fixed;top:0;right:max(18px,env(safe-area-inset-right,0px));height:100vh;width:var(--die);display:block;z-index:20;pointer-events:none}
+html[data-v="b"] .stage-inner{position:absolute;left:0;top:96px;display:block;width:var(--die);height:var(--die);will-change:transform}
+html[data-v="b"] .scene{pointer-events:auto}
+html[data-v="b"] .shadow,html[data-v="b"] .readout{display:none}
+html[data-v="b"] .content{padding-right:96px}
+.vtrack{display:none}
+html[data-v="b"] .vtrack{display:block;position:absolute;left:calc(var(--die)/2 - 1px);top:96px;bottom:40px;width:2px;background:linear-gradient(var(--line),var(--line)) center/1px 100% no-repeat}
+.vtrack a{position:absolute;left:50%;width:14px;height:14px;margin:-7px 0 0 -7px;display:grid;place-items:center;pointer-events:auto;cursor:pointer}
+.vtrack a::before{content:"";width:6px;height:6px;background:var(--mute);transform:rotate(45deg);transition:background .3s,transform .3s}
+.vtrack a.on::before{background:var(--blood);transform:rotate(45deg) scale(1.3)}
+.vname{display:none}
+html[data-v="b"] .vname{display:block;position:fixed;right:calc(max(18px,env(safe-area-inset-right,0px)) + var(--die) + 14px);top:0;z-index:20;font:500 .6rem var(--f-mono);letter-spacing:.2em;text-transform:uppercase;color:var(--mute);white-space:nowrap;pointer-events:none;will-change:transform}
+html[data-v="b"] .vname b{color:var(--blood);font-weight:500;margin-right:.5rem}
+
+/* ---- c: chapters ---- */
+html[data-v="c"]{--die:104px}
+html[data-v="c"] .layout{display:block;max-width:60rem}
+html[data-v="c"] .stage{display:none}
+html[data-v="c"] .roll{opacity:1;min-height:70vh}
+.slot3d{display:none}
+html[data-v="c"] .slot3d{display:block;height:var(--die);margin-bottom:.8rem}
+html[data-v="c"] .slot3d .scene{margin:0}
+.chip{display:none}
+html[data-v="c"] .chip{display:grid;width:104px;aspect-ratio:1;border:5.4px solid var(--mark);border-radius:11px;background:var(--black);grid-template:repeat(3,1fr)/repeat(3,1fr);padding:18px;margin-bottom:.8rem;transform-origin:50% 100%;box-sizing:border-box}
+html[data-v="c"] .roll:first-of-type .chip{display:none}
+.chip i{width:8px;aspect-ratio:1;background:var(--blood);box-shadow:0 0 12px rgba(184,20,28,.75);transform:rotate(45deg);align-self:center;justify-self:center;visibility:hidden}
+.chip[data-n="1"] i:nth-child(5),
+.chip[data-n="2"] i:nth-child(1),
+.chip[data-n="2"] i:nth-child(9),
+.chip[data-n="3"] i:nth-child(1),
+.chip[data-n="3"] i:nth-child(5),
+.chip[data-n="3"] i:nth-child(9),
+.chip[data-n="4"] i:nth-child(1),
+.chip[data-n="4"] i:nth-child(3),
+.chip[data-n="4"] i:nth-child(7),
+.chip[data-n="4"] i:nth-child(9),
+.chip[data-n="5"] i:nth-child(1),
+.chip[data-n="5"] i:nth-child(3),
+.chip[data-n="5"] i:nth-child(5),
+.chip[data-n="5"] i:nth-child(7),
+.chip[data-n="5"] i:nth-child(9),
+.chip[data-n="6"] i:nth-child(1),
+.chip[data-n="6"] i:nth-child(3),
+.chip[data-n="6"] i:nth-child(4),
+.chip[data-n="6"] i:nth-child(6),
+.chip[data-n="6"] i:nth-child(7),
+.chip[data-n="6"] i:nth-child(9){visibility:visible}
+html[data-v="c"] .chip{opacity:0}
+html[data-v="c"] .roll.seen .chip{animation:chipIn .9s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes chipIn{0%{opacity:0;transform:perspective(500px) translateY(-46px) rotateX(-190deg)}55%{opacity:1;transform:perspective(500px) translateY(4px) rotateX(8deg)}75%{transform:perspective(500px) translateY(-5px) rotateX(-3deg)}100%{opacity:1;transform:none}}
+
+/* ---- d: tumble ---- */
+html[data-v="d"] .layout{display:block;max-width:none}
+html[data-v="d"] .stage{position:fixed;inset:0;height:100vh;display:block;z-index:1;pointer-events:none}
+html[data-v="d"] .stage-inner{position:absolute;left:25%;top:50%;margin:calc(var(--die)/-2) 0 0 calc(var(--die)/-2);display:grid;gap:2.4rem;justify-items:center;transition:transform 1.1s cubic-bezier(.45,0,.2,1)}
+html[data-v="d"] .scene{pointer-events:auto}
+html[data-v="d"] .content{position:relative;z-index:2;pointer-events:none}
+html[data-v="d"] .content>*{pointer-events:auto}   /* the empty half beside the text lets clicks through to the die */
+html[data-v="d"] .roll{width:50%;padding-inline:3vw 6vw;transition:opacity .5s,margin .9s cubic-bezier(.45,0,.2,1)}
+html[data-v="d"] .roll[data-face="1"],html[data-v="d"] .roll[data-face="3"],html[data-v="d"] .roll[data-face="5"]{margin-left:50%}
+html[data-v="d"] footer{margin-inline:6vw}
+html[data-v="d"] body::before{background:radial-gradient(circle at var(--gx,25%) 50%,rgba(184,20,28,.13),transparent 42%)}
+
+@media (max-width:860px){
+  html[data-v="b"]{--die:44px}
+  html[data-v="b"] .stage-inner,html[data-v="b"] .vtrack{top:78px}
+  html[data-v="b"] .content{padding-right:64px}
+  html[data-v="b"] .vname{display:none}
+  html[data-v="b"] .roll .kick,html[data-v="b"] .roll h2,html[data-v="b"] .studio-title{padding-right:0}
+  html[data-v="c"]{--die:84px}
+  html[data-v="c"] .chip{width:84px;padding:14px;border-width:4.4px;border-radius:9px}
+  html[data-v="c"] .roll .kick,html[data-v="c"] .roll h2,html[data-v="c"] .studio-title{padding-right:0}
+  html[data-v="d"] .stage{position:fixed;inset:auto;top:calc(64px + env(safe-area-inset-top,0px));left:0;right:0;height:var(--die);z-index:20}
+  html[data-v="d"] .stage-inner{left:14px;top:0;margin:0;gap:.6rem}
+  html[data-v="d"] .roll{width:auto;margin-left:0!important;padding-inline:0}
+  html[data-v="d"] .roll .kick,html[data-v="d"] .roll h2,html[data-v="d"] .studio-title{padding-right:90px}   /* even faces: die on the right */
+  html[data-v="d"] .roll:is([data-face="1"],[data-face="3"],[data-face="5"]) :is(.kick,h2,.studio-title){padding-right:0;padding-left:90px}   /* odd faces: die on the left */
+  html[data-v="d"] footer{margin-inline:0}
+  html[data-v="d"] .readout span{display:none}
+}
+
+/* ---- e: roll to travel (layout A; the die is a randomiser: click it and it rolls you to a section) ---- */
+.ehint{display:none}
+html[data-v="e"] .ehint{display:block;font:500 .6rem var(--f-mono);letter-spacing:.24em;text-transform:uppercase;color:var(--mute);text-align:center;margin-top:-1.4rem}
+html[data-v="e"] .ehint b{color:var(--blood);font-weight:500}
+html[data-v="e"] .scene{cursor:pointer}
+@keyframes rattle{0%,100%{transform:none}20%{transform:translate(-3px,1px) rotate(-3deg)}40%{transform:translate(3px,-1px) rotate(3deg)}60%{transform:translate(-2px,0) rotate(-2deg)}80%{transform:translate(2px,1px) rotate(2deg)}}
+@media (max-width:860px){ html[data-v="e"] .ehint{display:none} }
+
+/* ---- f: footprints (layout A; the die leaves a stamped face at the start of each section along a dotted trail) ---- */
+html[data-v="f"] .content{border-left:1px dashed #3a3434;padding-left:64px;position:relative}
+html[data-v="f"] .roll{position:relative}
+html[data-v="f"] .chip{display:grid;position:absolute;left:-82px;top:-18px;width:36px;aspect-ratio:1;padding:6px;border:2px solid var(--mark);border-radius:5px;background:var(--black);grid-template:repeat(3,1fr)/repeat(3,1fr);box-sizing:border-box;opacity:0;transform:scale(1.8);z-index:2;cursor:pointer}
+html[data-v="f"] .chip i{width:4px;box-shadow:0 0 6px rgba(184,20,28,.8)}
+html[data-v="f"] .roll.seen .chip{animation:stamp .5s cubic-bezier(.3,1.4,.5,1) forwards}
+html[data-v="f"] .roll.seen .chip::after{content:"";position:absolute;inset:-8px;border:2px solid var(--blood);border-radius:8px;animation:stampRing .7s ease-out forwards;pointer-events:none}
+@keyframes stamp{0%{opacity:0;transform:scale(1.9) rotate(-14deg)}60%{opacity:1;transform:scale(.92) rotate(3deg)}100%{opacity:1;transform:none}}
+@keyframes stampRing{0%{opacity:.9;transform:scale(.6)}100%{opacity:0;transform:scale(1.6)}}
+@media (max-width:860px){
+  html[data-v="f"] .content{padding-left:34px;margin-left:10px}
+  html[data-v="f"] .chip{left:-48px;width:28px;padding:5px;top:-14px}
+  html[data-v="f"] .chip i{width:3px}
+}
+
+/* ---- g: dice dock (full-width text; six faces along the bottom, the die rolls along them to the section you're on) ---- */
+.dock{display:none}
+html[data-v="g"]{--die:52px}
+html[data-v="g"] .layout{display:block;max-width:60rem}
+html[data-v="g"] .content{padding-bottom:160px}
+html[data-v="g"] .dock{display:flex;gap:12px;position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:19;padding:12px 14px;background:rgba(0,0,0,.82);border:1px solid var(--line);border-radius:14px}
+.dk{width:44px;aspect-ratio:1;padding:7px;border:2px solid #4a4444;border-radius:7px;background:var(--black);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);cursor:pointer;transition:border-color .25s,transform .25s,opacity .3s;box-sizing:border-box}
+.dk i{width:5px;aspect-ratio:1;background:var(--mute);transform:rotate(45deg);align-self:center;justify-self:center;visibility:hidden}
+.dk:hover{border-color:var(--mark);transform:translateY(-3px)}
+.dk:hover i{background:var(--chalk)}
+.dk.on{opacity:0}
+html[data-v="g"] .stage{position:fixed;left:0;top:0;width:0;height:0;display:block;z-index:21;pointer-events:none}
+html[data-v="g"] .stage-inner{position:fixed;display:block;width:var(--die);height:var(--die);transition:transform .9s cubic-bezier(.45,0,.2,1)}
+html[data-v="g"] .scene{pointer-events:auto}
+html[data-v="g"] .shadow,html[data-v="g"] .readout,html[data-v="g"] .vtrack{display:none}
+.dname{display:none}
+html[data-v="g"] .dname{display:block;position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom,0px));text-align:center;z-index:19;font:500 .6rem var(--f-mono);letter-spacing:.24em;text-transform:uppercase;color:var(--mute);pointer-events:none}
+html[data-v="g"] .dname b{color:var(--blood);font-weight:500;margin-right:.6rem}
+html.gate .dock,html.gate .dname{opacity:0}
+@media (max-width:860px){
+  html[data-v="g"]{--die:40px}
+  html[data-v="g"] .dock{gap:8px;padding:9px 10px;bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+  .dk{width:34px;padding:5px}
+  .dk i{width:4px}
+  html[data-v="g"] .dname{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  html[data-v="g"] .roll .kick,html[data-v="g"] .roll h2,html[data-v="g"] .studio-title{padding-right:0}
+}
+.dk[data-n="1"] i:nth-child(5),
+.dk[data-n="2"] i:nth-child(1),
+.dk[data-n="2"] i:nth-child(9),
+.dk[data-n="3"] i:nth-child(1),
+.dk[data-n="3"] i:nth-child(5),
+.dk[data-n="3"] i:nth-child(9),
+.dk[data-n="4"] i:nth-child(1),
+.dk[data-n="4"] i:nth-child(3),
+.dk[data-n="4"] i:nth-child(7),
+.dk[data-n="4"] i:nth-child(9),
+.dk[data-n="5"] i:nth-child(1),
+.dk[data-n="5"] i:nth-child(3),
+.dk[data-n="5"] i:nth-child(5),
+.dk[data-n="5"] i:nth-child(7),
+.dk[data-n="5"] i:nth-child(9),
+.dk[data-n="6"] i:nth-child(1),
+.dk[data-n="6"] i:nth-child(3),
+.dk[data-n="6"] i:nth-child(4),
+.dk[data-n="6"] i:nth-child(6),
+.dk[data-n="6"] i:nth-child(7),
+.dk[data-n="6"] i:nth-child(9){visibility:visible}
+
+.lab em{font-style:normal}
+@media (max-width:860px){
+  .lab{gap:2px;padding:4px}
+  .lab em{display:none}
+  .lab button{padding:.6rem .7rem}
+  .lab button b{margin-right:0}
+  html[data-v="g"] .dock{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  html[data-v="g"] .dname{bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+}
+
+/* ===== DOCK LAB: layout G (dice dock) in five takes; html[data-dv] picks one =====
+   dock   the original: six faces along the bottom, the die rolls along to your section
+   top    the dock lives in the top bar instead, out of the way of the text
+   roll   the die rolls along the dock as you scroll, tipping over edge to edge in step with the page
+   mag    the dock magnifies under the pointer like a desktop dock and names each section
+   hide   the dock tucks away while you read down the page and comes back when you scroll up */
+#lab{display:none!important}
+.dl{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(64px + env(safe-area-inset-top,0px));z-index:60;display:flex;flex-direction:column;gap:2px;padding:5px;background:rgba(13,12,12,.92);border:1px solid var(--line);font:500 .6rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;transition:opacity .6s}
+.dl span{color:var(--mute);padding:.3rem .5rem}
+.dl button{font:inherit;letter-spacing:inherit;text-transform:inherit;text-align:left;color:var(--mute);background:none;border:1px solid transparent;padding:.5rem .6rem;cursor:pointer}
+.dl button:hover{color:var(--chalk)}
+.dl button[aria-pressed="true"]{color:var(--chalk);border-color:var(--maroon);background:var(--maroon)}
+.dl button b{color:var(--blood);font-weight:500;margin-right:.45rem}
+.dl button[aria-pressed="true"] b{color:var(--chalk)}
+html.gate .dl{opacity:0;pointer-events:none}
+html[data-v="g"] .layout{padding-left:120px;max-width:66rem}
+.dk{position:relative}
+
+/* top: the dock sits in the bar */
+html[data-dv="top"] .bar nav{display:none}
+html[data-dv="top"] .dock{top:calc(8px + env(safe-area-inset-top,0px));bottom:auto;padding:6px 8px;gap:8px;border-radius:10px;z-index:31;background:rgba(0,0,0,.6)}
+html[data-dv="top"] .dk{width:32px;padding:5px;border-radius:5px}
+html[data-dv="top"] .dk i{width:4px}
+html[data-dv="top"]{--die:38px}
+html[data-dv="top"] .stage{z-index:32}
+html[data-dv="top"] .dname{bottom:auto;top:calc(62px + env(safe-area-inset-top,0px));z-index:31}
+html[data-dv="top"] .content{padding-bottom:18vh;padding-top:40px}
+
+/* mag: magnifies like a desktop dock, with a name over the face you're pointing at */
+html[data-dv="mag"] .dock{align-items:flex-end}
+html[data-dv="mag"] .dk{transition:none;--s:1;padding:calc(7px * var(--s))}
+html[data-dv="mag"] .dk i{width:calc(5px * var(--s))}
+html[data-dv="mag"] .dk:hover{transform:none}
+html[data-dv="mag"] .dk::after{content:attr(aria-label);position:absolute;left:50%;bottom:calc(100% + 12px);transform:translateX(-50%);white-space:nowrap;font:500 .6rem var(--f-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--chalk);background:var(--coal);border:1px solid var(--line);padding:.35rem .6rem;opacity:0;pointer-events:none;transition:opacity .2s}
+html[data-dv="mag"] .dk:hover::after{opacity:1}
+
+/* hide: tucks away while reading */
+html[data-dv="hide"] .dock,html[data-dv="hide"] .dname{transition:transform .45s cubic-bezier(.3,.7,.3,1),opacity .35s}
+html[data-dv="hide"].away .dock{transform:translate(-50%,24px);opacity:0;pointer-events:none}
+html[data-dv="hide"].away .dname{opacity:0}
+html[data-dv="hide"] .stage-inner{transition:transform .9s cubic-bezier(.45,0,.2,1),opacity .35s}
+html[data-dv="hide"].away .stage-inner{opacity:.85}
+
+@media (max-width:860px){
+  .dl{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px));flex-direction:row;flex-wrap:wrap;max-width:calc(100vw - 32px)}
+  .dl em{display:none}
+  .dl button b{margin-right:0}
+  html[data-v="g"] .layout{padding-left:0}
+  html[data-dv="top"] .dock{top:calc(52px + env(safe-area-inset-top,0px))}
+  html[data-dv="top"] .dk{width:28px;padding:4px}
+  html[data-dv="top"] .dname{top:calc(100px + env(safe-area-inset-top,0px))}
+  html[data-dv="top"] .content{padding-top:96px}
+  html[data-dv="top"]{--die:34px}
+}
+.dl em{font-style:normal}
+
+/* ===== DICE DOCK: the die rolls along a dock of six faces at the bottom as you scroll =====
+   The die only ever turns one way per direction: clockwise as it rolls on to the next section, anticlockwise back.
+   It keeps facing you and its pips change as it tips over each corner, so there are no extra tumbles.
+   The text fades in above the dock, so the dock never sits on top of anything you're reading. */
+#dl{display:none!important}
+html[data-v="g"] .layout{padding-left:0}
+html[data-v="g"] .dock{bottom:calc(26px + env(safe-area-inset-bottom,0px))}
+html[data-v="g"] .dname{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+html[data-v="g"] .content{padding-bottom:34vh}
+.cube[data-show] .f1 i{visibility:hidden}
+.cube[data-show="1"] .f1 i:nth-child(5),
+.cube[data-show="2"] .f1 i:nth-child(1),
+.cube[data-show="2"] .f1 i:nth-child(9),
+.cube[data-show="3"] .f1 i:nth-child(1),
+.cube[data-show="3"] .f1 i:nth-child(5),
+.cube[data-show="3"] .f1 i:nth-child(9),
+.cube[data-show="4"] .f1 i:nth-child(1),
+.cube[data-show="4"] .f1 i:nth-child(3),
+.cube[data-show="4"] .f1 i:nth-child(7),
+.cube[data-show="4"] .f1 i:nth-child(9),
+.cube[data-show="5"] .f1 i:nth-child(1),
+.cube[data-show="5"] .f1 i:nth-child(3),
+.cube[data-show="5"] .f1 i:nth-child(5),
+.cube[data-show="5"] .f1 i:nth-child(7),
+.cube[data-show="5"] .f1 i:nth-child(9),
+.cube[data-show="6"] .f1 i:nth-child(1),
+.cube[data-show="6"] .f1 i:nth-child(3),
+.cube[data-show="6"] .f1 i:nth-child(4),
+.cube[data-show="6"] .f1 i:nth-child(6),
+.cube[data-show="6"] .f1 i:nth-child(7),
+.cube[data-show="6"] .f1 i:nth-child(9){visibility:visible}
+.fadeb{position:fixed;left:0;right:0;bottom:0;height:calc(230px + env(safe-area-inset-bottom,0px));z-index:18;pointer-events:none;background:linear-gradient(to top,var(--black) 0,var(--black) 34%,rgba(0,0,0,.85) 52%,rgba(0,0,0,0) 100%)}
+html.gate .fadeb{opacity:0}
+.fadeb{transition:opacity 1s}
+@media (max-width:860px){
+  html[data-v="g"] .dock{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+  html[data-v="g"] .dname{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .fadeb{height:calc(190px + env(safe-area-inset-bottom,0px))}
+}
+
+/* The die: solid and lit from the top left. The front face is near-black with a soft sheen and a gloss that stays
+   lit from the top left as the die rolls (it counter-turns by --th); the sides are darker with dimmer edges and grey
+   pips, the top catches a little more light, a dark inner core fills the open corners where the rounded faces meet,
+   and the red pips have a slight gem finish. A shadow sits under it on the dock, shrinking as it lifts. */
+#cube .face{background:#060505}
+#cube .face:not(.f1){border-color:#7a7373;background:linear-gradient(160deg,#0c0b0b,#020202)}
+#cube .f3,#cube .f4{border-color:#a8a2a1}
+#cube .face:not(.front) i{background:#5c5656}
+#cube .f1{background:radial-gradient(circle at 32% 26%,#1c1919 0,#080707 55%,#000 100%);box-shadow:inset 0 0 calc(var(--die)*.12) rgba(0,0,0,.9)}
+#cube .f1::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(calc(135deg - var(--th,0deg)),rgba(255,255,255,.14),rgba(255,255,255,0) 44%)}
+.cube.lit .face.front i{background:linear-gradient(135deg,#e5363e 0,#b8141c 45%,#7e0c12 100%);box-shadow:0 0 10px rgba(184,20,28,.7),0 0 2px rgba(255,120,120,.6)}
+.core{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
+.core i{position:absolute;inset:3%;background:#030303;visibility:visible!important}
+.core i:nth-child(1){transform:translateZ(calc(var(--die)*.47))}
+.core i:nth-child(2){transform:rotateY(180deg) translateZ(calc(var(--die)*.47))}
+.core i:nth-child(3){transform:rotateY(90deg) translateZ(calc(var(--die)*.47))}
+.core i:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--die)*.47))}
+.core i:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--die)*.47))}
+.core i:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--die)*.47))}
+.rshadow{position:fixed;left:0;top:0;width:calc(var(--die)*1.05);height:10px;border-radius:50%;background:radial-gradient(closest-side,rgba(184,20,28,.38),rgba(184,20,28,0));pointer-events:none;z-index:20;opacity:0;transition:opacity .4s}
+html.gate .rshadow{visibility:hidden}
+
+html[data-v="g"]{--die:42px}
+html[data-v="g"]:not(.gate) #deck .scene,html[data-v="g"]:not(.gate) .scene{cursor:grab}
+html.dragdie,html.dragdie *{cursor:grabbing!important;user-select:none}
+@media (max-width:860px){ html[data-v="g"]{--die:32px} html[data-v="g"] .roll{min-height:calc(100svh - 70px)} }   /* phones: one section to a screen */
+
+#cube .face{border-radius:18%}
+.core i{inset:3.5%;border-radius:14%;background:#b9b3b2}   /* the core shows only at the corners, where the faces' rounded edges part: edge-coloured so the corners read as rounded edges, not holes */
+.core i:nth-child(1){transform:translateZ(calc(var(--die)*.475))}
+.core i:nth-child(2){transform:rotateY(180deg) translateZ(calc(var(--die)*.475))}
+.core i:nth-child(3){transform:rotateY(90deg) translateZ(calc(var(--die)*.475))}
+.core i:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--die)*.475))}
+.core i:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--die)*.475))}
+.core i:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--die)*.475))}
+
+@media (hover:none),(pointer:coarse){
+  .dk:hover{border-color:#4a4444;transform:none}
+  .dk:hover i{background:var(--mute)}
+}
+.dk:focus:not(:focus-visible){outline:none}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="mark" href="#top" aria-label="DieSoftware home">
+    <svg viewBox="0 0 120 40" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4 L22 20 L6 36"/><path d="M60 6 V34"/><path d="M110 4 L94 20 L110 36"/><path d="M104 17 l3 3 -3 3 -3 -3z" fill="currentColor" stroke-width="1"/></svg>
+    DieSoftware
+  </a>
+  <nav aria-label="Sections"><a href="#studio">Studio</a><a href="#projects">Projects</a><a href="#follow">Follow</a></nav>
+</header>
+
+<div id="intro">
+  <!-- The logo animation, rebuilt from the original logo.mp4 as live vector drawing (coordinates are the video's 3840×2160 frame).
+       Two chevrons (D, E) and four small blocks (pip, I, its dot, the E dot) are moved by the keyframes in LOGO_TRACKS below. -->
+  <svg id="mark" viewBox="0 0 3840 2160" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <defs><linearGradient id="fxGlintGrad" gradientUnits="userSpaceOnUse" x1="1000" y1="0" x2="1400" y2="0" gradientTransform="rotate(18 1920 1080)"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".42" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".58" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="fxFloorGrad" gradientUnits="userSpaceOnUse" x1="-400" y1="0" x2="4240" y2="0"><stop offset="0" stop-color="#e3e3e3"/><stop offset=".194" stop-color="#e3e3e3"/><stop offset=".362" stop-color="#e3e3e3" stop-opacity="0"/><stop offset=".638" stop-color="#e3e3e3" stop-opacity="0"/><stop offset=".806" stop-color="#e3e3e3"/><stop offset="1" stop-color="#e3e3e3"/></linearGradient><radialGradient id="blipGlowGrad"><stop offset="0" stop-color="#b8141c" stop-opacity=".75"/><stop offset=".4" stop-color="#b8141c" stop-opacity=".35"/><stop offset="1" stop-color="#b8141c" stop-opacity="0"/></radialGradient><radialGradient id="fxShadowGrad"><stop offset="0" stop-color="#b8141c" stop-opacity=".55"/><stop offset=".55" stop-color="#5a0c11" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+    <g id="markAll" fill="none" stroke="#e3e3e3" stroke-width="14" stroke-linecap="butt" stroke-linejoin="round">
+      <g id="fxShadows" stroke="none"></g>
+      <g id="fxRings" fill="none" stroke="#b8141c"></g>
+      <g id="ghosts"></g>
+      <g id="fxTrails" stroke="#b8141c" stroke-linecap="round"></g>
+      <g id="pD"><path id="mD" d="M1421 908.5 L1421.05 908.5 A21.6 21.6 0 0 1 1436.33 914.83 L1586.23 1064.73 A21.6 21.6 0 0 1 1586.23 1095.27 L1436.33 1245.17 A21.6 21.6 0 0 1 1421.05 1251.5 L1421 1251.5"/></g>
+      <g id="pE"><path id="mE" d="M2418 908.5 L2417.95 908.5 A21.6 21.6 0 0 0 2402.67 914.83 L2252.77 1064.73 A21.6 21.6 0 0 0 2252.77 1095.27 L2402.67 1245.17 A21.6 21.6 0 0 0 2417.95 1251.5 L2418 1251.5"/></g>
+      <g id="fxGlow" stroke="none"></g>
+      <g id="gI"><rect id="sA" class="spr"/></g>
+      <g id="gDot"><rect id="sB" class="spr"/></g>
+      <rect id="sP" class="spr"/>
+      <rect id="sT" class="spr"/>
+      <g id="fxSparks" stroke-linecap="round"></g>
+      <g id="fxGlint" fill="none" stroke="url(#fxGlintGrad)" style="display:none"></g>
+    </g>
+  </svg>
+  <div id="gate">
+    <svg class="gtrail" id="gTrail" aria-hidden="true"></svg>
+    <svg class="gflick" id="gFlick" viewBox="0 0 120 90" aria-hidden="true"><path class="arc" d="M10 80 Q40 6 108 18"/><path class="head" d="M108 18 99 12 101 23Z"/></svg>
+    <div class="gledge" id="gLedge"></div>
+    <div class="gshadow" id="gShadow"></div>
+    <button class="gdie" id="rollBtn" type="button" aria-label="Roll the die"><svg class="die" viewBox="0 0 100 100" aria-hidden="true"><circle class="halo" cx="50" cy="50" r="40"/><rect class="body" x="7" y="7" width="86" height="86" rx="15" pathLength="1"/><path class="pip" d="M50 38 62 50 50 62 38 50Z"/></svg></button>
+    <div class="gsay" id="gSay"><b>Grab the die</b> and flick it</div>
+    <div class="gask" id="gAsk"><b>Hover over the dot</b></div>
+  </div>
+  <button class="skip" id="skipBtn" type="button">Skip intro</button>
+</div>
+<span id="top"></span>
+<div class="vname" id="vName" aria-hidden="true"><b id="vNum">01</b><span id="vTxt">The studio</span></div>
+<div class="fadeb" aria-hidden="true"></div>
+<div class="rshadow" id="rShadow" aria-hidden="true"></div>
+<nav class="dock" id="dock" aria-label="Sections"><button class="dk" type="button" data-n="1" aria-label="Section 1"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><button class="dk" type="button" data-n="2" aria-label="Section 2"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><button class="dk" type="button" data-n="3" aria-label="Section 3"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><button class="dk" type="button" data-n="4" aria-label="Section 4"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><button class="dk" type="button" data-n="5" aria-label="Section 5"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button><button class="dk" type="button" data-n="6" aria-label="Section 6"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></button></nav>
+<div class="dname" id="dName" aria-hidden="true"><b id="dNum">01</b><span id="dTxt">The studio</span></div>
+<div class="dl" id="dl" role="group" aria-label="Dock to try"><span>Dock</span>
+  <button type="button" data-dv="dock"><b>1</b><em>Dock</em></button>
+  <button type="button" data-dv="top"><b>2</b><em>Top bar</em></button>
+  <button type="button" data-dv="roll"><b>3</b><em>Rolling</em></button>
+  <button type="button" data-dv="mag"><b>4</b><em>Magnify</em></button>
+  <button type="button" data-dv="hide"><b>5</b><em>Auto-hide</em></button>
+</div>
+<div class="lab" id="lab" role="group" aria-label="Layout to try"><span>Layout</span>
+  <button type="button" data-v="a"><b>A</b><em>Current</em></button>
+  <button type="button" data-v="b"><b>B</b><em>Scroll bar</em></button>
+  <button type="button" data-v="c"><b>C</b><em>Chapters</em></button>
+  <button type="button" data-v="d"><b>D</b><em>Tumble</em></button>
+  <button type="button" data-v="e"><b>E</b><em>Roll to travel</em></button>
+  <button type="button" data-v="f"><b>F</b><em>Footprints</em></button>
+  <button type="button" data-v="g"><b>G</b><em>Dice dock</em></button>
+</div>
+
+<div class="layout">
+  <aside class="stage" aria-hidden="true">
+    <div class="stage-inner">
+      <div class="scene"><div class="cube" id="cube">
+        <div class="face f1"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="face f2"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="face f3"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="face f4"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="face f5"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="face f6"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="core" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div></div>
+      <div class="shadow"></div>
+      <div class="ehint" aria-hidden="true"><b>Click the die</b> to roll somewhere</div>
+      <div class="readout"><b id="rolled">–</b><span>Rolled</span><span id="rollName">Scroll to roll</span></div>
+    </div>
+    <div class="vtrack" id="vTrack" aria-hidden="true"></div>
+  </aside>
+
+  <main class="content">
+    <section class="roll" id="studio" data-face="1" data-name="The studio">
+      <div class="chip" data-n="1" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="slot3d" id="slot3d"></div>
+      <span class="kick"><b>01</b> The studio</span>
+      <h1 class="studio-title">DieSoftware</h1>
+      <span class="draft">Draft copy</span>
+      <h2>A one-person game studio, built <em>one roll</em> at a time.</h2>
+      <p>DieSoftware is an independent studio making games that put chance, risk and consequence at the centre. Die as in dice: every project starts as a gamble, and the studio exists to keep rolling.</p>
+    </section>
+
+    <section class="roll" data-face="2" data-name="Why it exists">
+      <div class="chip" data-n="2" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>02</b> Why it exists</span>
+      <span class="draft">Draft copy</span>
+      <h2>Games where every choice <em>costs</em> something.</h2>
+      <p>The studio started from a simple frustration: too many games let you play it safe forever. DieSoftware makes games that ask you to commit.</p>
+      <div class="principles">
+        <div><h3>Risk</h3><p>Every decision has a price, and you pay it.</p></div>
+        <div><h3>Consequence</h3><p>What you leave behind carries forward.</p></div>
+        <div><h3>Craft</h3><p>Small studio, no shortcuts, every system built by hand.</p></div>
+      </div>
+    </section>
+
+    <section class="roll" data-face="3" data-name="Behind the die">
+      <div class="chip" data-n="3" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>03</b> Behind the die</span>
+      <span class="draft">Draft copy</span>
+      <h2>One developer. No face, <em>just the games</em>.</h2>
+      <p>DieSoftware is a one-person studio. Design, programming, art and sound all come from a single desk, and the person rolling the dice would rather you knew the games than the name. This page follows the studio as it grows, from the first game to the ones after it.</p>
+    </section>
+
+    <section class="roll" id="projects" data-face="4" data-name="In development">
+      <div class="chip" data-n="4" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>04</b> Projects</span>
+      <span class="draft">Example entries</span>
+      <h2>On the table <em>now</em></h2>
+      <div class="slots">
+        <article class="slot live">
+          <div class="num">01</div>
+          <div class="body">
+            <div class="meta"><span class="st">● In development</span><span>Survival</span><span>PC</span></div>
+            <h3>Radiated Legacy</h3>
+            <p>Survive the fallout and decide what the next generation inherits. The studio's first full game.</p>
+            <div class="tasks">
+              <div><span>Enemy AI pathfinding</span><em class="hot">In progress</em></div>
+              <div><span>Inventory and weight system</span><em>Testing</em></div>
+              <div><span>Fallout storms</span><em>Queued</em></div>
+            </div>
+          </div>
+        </article>
+        <article class="slot locked">
+          <div class="num">02</div>
+          <div class="body"><div class="meta"><span>Unannounced</span></div><h3>Next roll</h3><p>Not rolled yet. Follow along to see it first.</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="roll" data-face="5" data-name="What's next">
+      <div class="chip" data-n="5" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>05</b> What's next</span>
+      <span class="draft">Example entries</span>
+      <h2>Where the studio is <em>heading</em></h2>
+      <div class="tasks">
+        <div><span>Radiated Legacy public playtest</span><em class="hot">Planned</em></div>
+        <div><span>Monthly devlog series</span><em>Planned</em></div>
+        <div><span>Studio Discord community</span><em>Planned</em></div>
+        <div><span>Second game prototype</span><em>Concept</em></div>
+      </div>
+    </section>
+
+    <section class="roll" id="follow" data-face="6" data-name="Follow">
+      <div class="chip" data-n="6" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>06</b> Follow</span>
+      <h2>Natural six. <em>Follow the studio.</em></h2>
+      <p>Devlogs, clips, playtest invites and the first look at every new game go out here first.</p>
+      <nav class="socials" aria-label="Social links"><a href="https://discord.gg/Z8xbE54SmW" target="_blank" rel="noopener" aria-label="Die Software on Discord" title="Discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a><a href="https://www.youtube.com/@radiatedlegacy" target="_blank" rel="noopener" aria-label="Die Software on YouTube" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.tiktok.com/@die.software" target="_blank" rel="noopener" aria-label="Die Software on TikTok" title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a><a href="https://www.instagram.com/die.software/" target="_blank" rel="noopener" aria-label="Die Software on Instagram" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg></a><a href="https://www.facebook.com/share/19ey6TybyG/" target="_blank" rel="noopener" aria-label="Die Software on Facebook" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg></a></nav>
+      <div class="contact"><a class="contact-btn" href="mailto:die.software.official+website@gmail.com?subject=Hello%20Die%20Software"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.8 7 8.2 6.2L20.2 7"/></svg><span>Contact us</span></a><button class="contact-copy" type="button" data-mail="die.software.official@gmail.com" aria-label="Copy the email address die.software.official@gmail.com" title="Copy email address"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg><span class="tip" aria-live="polite">Copy email</span></button></div>
+    </section>
+
+    <footer><span>© 2026 DieSoftware</span><span>Independent game studio</span></footer>
+  </main>
+</div>
+
+<script>
+/* Keyframes for the logo animation, measured from logo.mp4 and smoothed: the die hops on true parabolas, everything else follows fitted curves. pi = D and E chevrons [dx,dy,deg ×2]; sp = blocks [cx,cy,w,h,deg]. q samples per video frame; frame 0 = video start, 30 per second. */
+window.LOGO_TRACKS={"f0":-40,"q":4,"pi":[-3256.12,61.11,-180.0,-3531.21,61.11,-180.0,-3249.27,41.83,-177.75,-3524.65,55.97,-177.75,-3242.15,22.85,-175.5,-3518.37,51.14,-175.5,-3234.75,4.18,-173.25,-3512.39,46.6,-173.25,-3227.11,-14.09,-171.0,-3506.58,42.34,-171.0,-3219.11,-32.05,-168.75,-3501.2,38.3,-168.75,-3210.97,-49.71,-166.5,-3496.03,34.65,-166.5,-3202.39,-66.85,-164.25,-3491.06,31.01,-164.25,-3193.69,-83.68,-162.0,-3486.39,27.83,-162.0,-3184.68,-100.2,-159.75,-3482.05,24.74,-159.75,-3175.35,-116.21,-157.5,-3477.95,21.89,-157.5,-3165.83,-131.8,-155.25,-3474.09,19.31,-155.25,-3156.02,-146.98,-153.0,-3470.49,16.85,-153.0,-3146.02,-161.75,-150.75,-3467.07,14.6,-150.75,-3135.74,-176.01,-148.5,-3463.94,12.58,-148.5,-3125.2,-189.95,-146.25,-3461.11,10.58,-146.25,-3114.4,-203.29,-144.0,-3458.44,8.77,-144.0,-3103.46,-216.22,-141.75,-3456.05,7.22,-141.75,-3092.26,-228.65,-139.5,-3453.84,5.76,-139.5,-3080.84,-240.57,-137.25,-3451.82,4.37,-137.25,-3069.29,-251.99,-135.0,-3449.95,3.2,-135.0,-3057.42,-263.02,-132.75,-3448.48,2.01,-132.75,-3045.44,-273.45,-130.5,-3447.1,1.05,-130.5,-3033.25,-283.29,-128.25,-3445.81,0.11,-128.25,-3020.87,-292.65,-126.0,-3444.74,-0.76,-126.0,-3008.4,-301.53,-123.75,-3443.87,-1.43,-123.75,-2995.75,-309.82,-121.5,-3443.1,-2.09,-121.5,-2982.93,-317.65,-119.25,-3442.58,-2.7,-119.25,-2969.93,-324.81,-117.0,-3442.1,-3.29,-117.0,-2956.88,-331.41,-114.75,-3441.77,-3.66,-114.75,-2943.67,-337.55,-112.5,-3441.57,-4.14,-112.5,-2930.41,-343.04,-110.25,-3441.46,-4.4,-110.25,-2917.01,-347.98,-108.0,-3441.42,-4.75,-108.0,-2903.46,-352.39,-105.75,-3441.6,-5.06,-105.75,-2889.99,-356.16,-103.5,-3441.7,-5.15,-103.5,-2876.29,-359.41,-101.25,-3441.93,-5.5,-101.25,-2862.66,-362.04,-99.0,-3442.17,-5.59,-99.0,-2848.92,-364.06,-96.75,-3442.49,-5.7,-96.75,-2835.16,-365.58,-94.5,-3442.88,-5.8,-94.5,-2821.4,-366.4,-92.25,-3443.18,-5.84,-92.25,-2807.62,-366.73,-90.0,-3443.62,-5.82,-90.0,-2793.85,-366.48,-87.75,-3444.06,-5.78,-87.75,-2780.07,-365.55,-85.5,-3444.35,-5.77,-85.5,-2766.29,-364.06,-83.25,-3444.72,-5.7,-83.25,-2752.62,-362.01,-81.0,-3445.05,-5.49,-81.0,-2738.96,-359.41,-78.75,-3445.32,-5.36,-78.75,-2725.31,-356.17,-76.5,-3445.52,-5.23,-76.5,-2711.76,-352.4,-74.25,-3445.7,-5.0,-74.25,-2698.23,-348.0,-72.0,-3445.81,-4.77,-72.0,-2684.81,-343.08,-69.75,-3445.83,-4.52,-69.75,-2671.61,-337.56,-67.5,-3445.7,-4.02,-67.5,-2658.41,-331.44,-65.25,-3445.45,-3.62,-65.25,-2645.33,-324.82,-63.0,-3445.17,-3.16,-63.0,-2632.36,-317.52,-60.75,-3444.65,-2.65,-60.75,-2619.51,-309.85,-58.5,-3444.16,-2.12,-58.5,-2606.86,-301.51,-56.25,-3443.4,-1.41,-56.25,-2594.32,-292.61,-54.0,-3442.46,-0.72,-54.0,-2581.99,-283.26,-51.75,-3441.44,0.15,-51.75,-2569.87,-273.37,-49.5,-3440.2,1.13,-49.5,-2557.85,-262.94,-47.25,-3438.79,2.08,-47.25,-2546.02,-251.99,-45.0,-3437.22,3.2,-45.0,-2534.4,-240.52,-42.75,-3435.42,4.42,-42.75,-2522.96,-228.64,-40.5,-3433.46,5.69,-40.5,-2511.82,-216.16,-38.25,-3431.23,7.29,-38.25,-2500.86,-203.28,-36.0,-3428.83,8.93,-36.0,-2490.09,-189.81,-33.75,-3426.11,10.66,-33.75,-2479.59,-175.96,-31.5,-3423.25,12.63,-31.5,-2469.26,-161.73,-29.25,-3420.21,14.62,-29.25,-2459.21,-146.94,-27.0,-3416.8,16.83,-27.0,-2449.41,-131.78,-24.75,-3413.22,19.25,-24.75,-2439.87,-116.17,-22.5,-3409.41,21.92,-22.5,-2430.68,-100.11,-20.25,-3405.24,24.9,-20.25,-2421.63,-83.61,-18.0,-3400.79,27.9,-18.0,-2412.83,-66.87,-15.75,-3396.23,31.07,-15.75,-2404.35,-49.6,-13.5,-3391.29,34.62,-13.5,-2396.1,-31.99,-11.25,-3386.15,38.36,-11.25,-2388.17,-14.07,-9.0,-3380.7,42.36,-9.0,-2380.55,4.27,-6.75,-3374.91,46.7,-6.75,-2373.14,22.93,-4.5,-3368.91,51.22,-4.5,-2366.02,41.9,-2.25,-3362.64,56.04,-2.25,-2359.19,61.17,0.0,-3356.1,61.17,0.0,-2352.64,56.05,2.25,-3349.26,41.91,2.25,-2346.36,51.23,4.5,-3342.14,22.94,4.5,-2340.36,46.7,6.75,-3334.72,4.28,6.75,-2334.6,42.37,9.0,-3327.13,-14.06,9.0,-2329.2,38.43,11.25,-3319.11,-31.92,11.25,-2323.94,34.69,13.5,-3310.88,-49.67,13.5,-2319.12,31.13,15.75,-3302.45,-66.73,15.75,-2314.42,27.86,18.0,-3293.72,-83.65,18.0,-2310.03,24.78,20.25,-3284.66,-100.16,20.25,-2305.95,21.99,22.5,-3275.36,-116.11,22.5,-2302.08,19.38,24.75,-3265.82,-131.73,24.75,-2298.49,16.96,27.0,-3256.02,-146.87,27.0,-2295.09,14.63,29.25,-3246.04,-161.72,29.25,-2291.97,12.59,31.5,-3235.77,-176.0,31.5,-2289.11,10.63,33.75,-3225.2,-189.9,33.75,-2286.51,8.87,36.0,-3214.47,-203.19,36.0,-2284.05,7.3,38.25,-3203.46,-216.14,38.25,-2281.85,5.83,40.5,-3192.27,-228.58,40.5,-2279.87,4.45,42.75,-3180.89,-240.49,42.75,-2278.02,3.27,45.0,-3169.22,-252.06,45.0,-2276.49,2.1,47.25,-3157.43,-262.92,47.25,-2275.07,1.13,49.5,-3145.41,-273.37,49.5,-2273.86,0.17,51.75,-3133.3,-283.23,51.75,-2272.84,-0.67,54.0,-3120.97,-292.56,54.0,-2271.91,-1.39,56.25,-3108.44,-301.49,56.25,-2271.16,-2.1,58.5,-3095.81,-309.83,58.5,-2270.58,-2.67,60.75,-3082.93,-317.61,60.75,-2270.18,-3.21,63.0,-3070.01,-324.73,63.0,-2269.83,-3.61,65.25,-3056.94,-331.36,65.25,-2269.64,-4.07,67.5,-3043.74,-337.47,67.5,-2269.5,-4.38,69.75,-3030.45,-343.02,69.75,-2269.5,-4.74,72.0,-3017.09,-347.97,72.0,-2269.65,-4.93,74.25,-3003.51,-352.26,74.25,-2269.72,-5.16,76.5,-2990.01,-356.17,76.5,-2270.02,-5.41,78.75,-2976.38,-359.32,78.75,-2270.25,-5.58,81.0,-2962.74,-362.03,81.0,-2270.59,-5.66,83.25,-2949.02,-364.02,83.25,-2270.95,-5.74,85.5,-2935.23,-365.52,85.5,-2271.31,-5.82,87.75,-2921.53,-366.38,87.75,-2271.69,-5.79,90.0,-2907.69,-366.7,90.0,-2272.06,-5.74,92.25,-2893.85,-366.44,92.25,-2272.44,-5.77,94.5,-2880.16,-365.55,94.5,-2272.82,-5.66,96.75,-2866.39,-364.02,96.75,-2273.09,-5.51,99.0,-2852.66,-362.03,99.0,-2273.35,-5.41,101.25,-2838.99,-359.46,101.25,-2273.6,-5.25,103.5,-2825.39,-356.19,103.5,-2273.75,-5.02,105.75,-2811.81,-352.42,105.75,-2273.88,-4.72,108.0,-2798.3,-347.95,108.0,-2273.9,-4.44,110.25,-2784.88,-343.0,110.25,-2273.7,-4.06,112.5,-2771.61,-337.6,112.5,-2273.5,-3.68,114.75,-2758.46,-331.5,114.75,-2273.18,-3.2,117.0,-2745.34,-324.86,117.0,-2272.75,-2.7,119.25,-2732.46,-317.57,119.25,-2272.2,-2.07,121.5,-2719.55,-309.8,121.5,-2271.45,-1.41,123.75,-2706.91,-301.51,123.75,-2270.59,-0.71,126.0,-2694.45,-292.6,126.0,-2269.52,0.14,128.25,-2682.07,-283.27,128.25,-2268.24,1.05,130.5,-2669.91,-273.45,130.5,-2266.86,2.02,132.75,-2657.92,-263.0,132.75,-2265.29,3.17,135.0,-2646.09,-252.02,135.0,-2263.51,4.4,137.25,-2634.49,-240.54,137.25,-2261.55,5.72,139.5,-2623.05,-228.61,139.5,-2259.29,7.24,141.75,-2611.88,-216.21,141.75,-2256.85,8.86,144.0,-2600.88,-203.34,144.0,-2254.22,10.59,146.25,-2590.2,-189.88,146.25,-2251.32,12.54,148.5,-2579.66,-176.05,148.5,-2248.25,14.61,150.75,-2569.3,-161.74,150.75,-2244.9,16.82,153.0,-2559.31,-146.95,153.0,-2241.3,19.26,155.25,-2549.49,-131.77,155.25,-2237.44,21.95,157.5,-2539.9,-116.14,157.5,-2233.23,24.79,159.75,-2530.67,-100.22,159.75,-2228.88,27.79,162.0,-2521.72,-83.72,162.0,-2224.28,31.05,164.25,-2512.88,-66.88,164.25,-2219.36,34.58,166.5,-2504.42,-49.64,166.5,-2214.21,38.37,168.75,-2496.16,-31.98,168.75,-2208.74,42.35,171.0,-2488.21,-14.08,171.0,-2202.96,46.61,173.25,-2480.6,4.18,173.25,-2196.97,51.15,175.5,-2473.2,22.86,175.5,-2190.69,55.98,177.75,-2466.07,41.84,177.75,-2184.12,61.11,180.0,-2459.21,61.11,180.0,-2177.27,41.83,182.25,-2452.65,55.97,182.25,-2170.15,22.85,184.5,-2446.37,51.14,184.5,-2162.75,4.18,186.75,-2440.39,46.6,186.75,-2155.11,-14.09,189.0,-2434.58,42.34,189.0,-2147.11,-32.05,191.25,-2429.2,38.3,191.25,-2138.97,-49.71,193.5,-2424.03,34.65,193.5,-2130.39,-66.85,195.75,-2419.06,31.01,195.75,-2121.69,-83.68,198.0,-2414.39,27.83,198.0,-2112.68,-100.2,200.25,-2410.05,24.74,200.25,-2103.35,-116.21,202.5,-2405.95,21.89,202.5,-2093.83,-131.8,204.75,-2402.09,19.31,204.75,-2084.02,-146.98,207.0,-2398.49,16.85,207.0,-2074.02,-161.75,209.25,-2395.07,14.6,209.25,-2063.74,-176.01,211.5,-2391.94,12.58,211.5,-2053.2,-189.95,213.75,-2389.11,10.58,213.75,-2042.4,-203.29,216.0,-2386.44,8.77,216.0,-2031.46,-216.22,218.25,-2384.05,7.22,218.25,-2020.26,-228.65,220.5,-2381.84,5.76,220.5,-2008.84,-240.57,222.75,-2379.82,4.37,222.75,-1997.29,-251.99,225.0,-2377.95,3.2,225.0,-1985.42,-263.02,227.25,-2376.48,2.01,227.25,-1973.44,-273.45,229.5,-2375.1,1.05,229.5,-1961.25,-283.29,231.75,-2373.81,0.11,231.75,-1948.87,-292.65,234.0,-2372.74,-0.76,234.0,-1936.4,-301.53,236.25,-2371.87,-1.43,236.25,-1923.75,-309.82,238.5,-2371.1,-2.09,238.5,-1910.93,-317.65,240.75,-2370.58,-2.7,240.75,-1897.93,-324.81,243.0,-2370.1,-3.29,243.0,-1884.88,-331.41,245.25,-2369.77,-3.66,245.25,-1871.67,-337.55,247.5,-2369.57,-4.14,247.5,-1858.41,-343.04,249.75,-2369.46,-4.4,249.75,-1845.01,-347.98,252.0,-2369.42,-4.75,252.0,-1831.46,-352.39,254.25,-2369.6,-5.06,254.25,-1817.99,-356.16,256.5,-2369.7,-5.15,256.5,-1804.29,-359.41,258.75,-2369.93,-5.5,258.75,-1790.66,-362.04,261.0,-2370.17,-5.59,261.0,-1776.92,-364.06,263.25,-2370.49,-5.7,263.25,-1763.16,-365.58,265.5,-2370.88,-5.8,265.5,-1749.4,-366.4,267.75,-2371.18,-5.84,267.75,-1735.62,-366.73,270.0,-2371.62,-5.82,270.0,-1721.85,-366.48,272.25,-2372.06,-5.78,272.25,-1708.07,-365.55,274.5,-2372.35,-5.77,274.5,-1694.29,-364.06,276.75,-2372.72,-5.7,276.75,-1680.62,-362.01,279.0,-2373.05,-5.49,279.0,-1666.96,-359.41,281.25,-2373.32,-5.36,281.25,-1653.31,-356.17,283.5,-2373.52,-5.23,283.5,-1639.76,-352.4,285.75,-2373.7,-5.0,285.75,-1626.23,-348.0,288.0,-2373.81,-4.77,288.0,-1612.81,-343.08,290.25,-2373.83,-4.52,290.25,-1599.61,-337.56,292.5,-2373.7,-4.02,292.5,-1586.41,-331.44,294.75,-2373.45,-3.62,294.75,-1573.33,-324.82,297.0,-2373.17,-3.16,297.0,-1560.36,-317.52,299.25,-2372.65,-2.65,299.25,-1547.51,-309.85,301.5,-2372.16,-2.12,301.5,-1534.86,-301.51,303.75,-2371.4,-1.41,303.75,-1522.32,-292.61,306.0,-2370.46,-0.72,306.0,-1509.99,-283.26,308.25,-2369.44,0.15,308.25,-1497.87,-273.37,310.5,-2368.2,1.13,310.5,-1485.85,-262.94,312.75,-2366.79,2.08,312.75,-1474.02,-251.99,315.0,-2365.22,3.2,315.0,-1462.4,-240.52,317.25,-2363.42,4.42,317.25,-1450.96,-228.64,319.5,-2361.46,5.69,319.5,-1439.82,-216.16,321.75,-2359.23,7.29,321.75,-1428.86,-203.28,324.0,-2356.83,8.93,324.0,-1418.09,-189.81,326.25,-2354.11,10.66,326.25,-1407.59,-175.96,328.5,-2351.25,12.63,328.5,-1397.26,-161.73,330.75,-2348.21,14.62,330.75,-1387.21,-146.94,333.0,-2344.8,16.83,333.0,-1377.41,-131.78,335.25,-2341.22,19.25,335.25,-1367.87,-116.17,337.5,-2337.41,21.92,337.5,-1358.68,-100.11,339.75,-2333.24,24.9,339.75,-1349.63,-83.61,342.0,-2328.79,27.9,342.0,-1340.83,-66.87,344.25,-2324.23,31.07,344.25,-1332.35,-49.6,346.5,-2319.29,34.62,346.5,-1324.1,-31.99,348.75,-2314.15,38.36,348.75,-1316.17,-14.07,351.0,-2308.7,42.36,351.0,-1308.55,4.27,353.25,-2302.91,46.7,353.25,-1301.14,22.93,355.5,-2296.91,51.22,355.5,-1294.02,41.9,357.75,-2290.64,56.04,357.75,-1287.19,61.17,360.0,-2284.1,61.17,360.0,-1280.64,56.05,362.25,-2277.26,41.91,362.25,-1274.36,51.23,364.5,-2270.14,22.94,364.5,-1268.36,46.7,366.75,-2262.72,4.28,366.75,-1262.6,42.37,369.0,-2255.13,-14.06,369.0,-1257.2,38.43,371.25,-2247.11,-31.92,371.25,-1251.94,34.69,373.5,-2238.88,-49.67,373.5,-1247.12,31.13,375.75,-2230.45,-66.73,375.75,-1242.42,27.86,378.0,-2221.72,-83.65,378.0,-1238.03,24.78,380.25,-2212.66,-100.16,380.25,-1233.95,21.99,382.5,-2203.36,-116.11,382.5,-1230.08,19.38,384.75,-2193.82,-131.73,384.75,-1226.49,16.96,387.0,-2184.02,-146.87,387.0,-1223.09,14.63,389.25,-2174.04,-161.72,389.25,-1219.97,12.59,391.5,-2163.77,-176.0,391.5,-1217.11,10.63,393.75,-2153.2,-189.9,393.75,-1214.51,8.87,396.0,-2142.47,-203.19,396.0,-1212.05,7.3,398.25,-2131.46,-216.14,398.25,-1209.85,5.83,400.5,-2120.27,-228.58,400.5,-1207.87,4.45,402.75,-2108.89,-240.49,402.75,-1206.02,3.17,405.0,-2097.29,-252.09,405.0,-1204.49,2.1,407.25,-2085.43,-262.92,407.25,-1203.07,1.13,409.5,-2073.41,-273.37,409.5,-1201.86,0.17,411.75,-2061.3,-283.23,411.75,-1200.84,-0.67,414.0,-2048.97,-292.56,414.0,-1199.91,-1.39,416.25,-2036.44,-301.49,416.25,-1199.16,-2.1,418.5,-2023.81,-309.83,418.5,-1198.58,-2.67,420.75,-2010.93,-317.61,420.75,-1198.18,-3.21,423.0,-1998.01,-324.73,423.0,-1197.83,-3.61,425.25,-1984.94,-331.36,425.25,-1197.64,-4.07,427.5,-1971.74,-337.47,427.5,-1197.5,-4.38,429.75,-1958.45,-343.02,429.75,-1197.5,-4.74,432.0,-1945.09,-347.97,432.0,-1197.65,-4.93,434.25,-1931.51,-352.26,434.25,-1197.72,-5.16,436.5,-1918.01,-356.17,436.5,-1198.02,-5.41,438.75,-1904.38,-359.32,438.75,-1198.25,-5.58,441.0,-1890.74,-362.03,441.0,-1198.59,-5.66,443.25,-1877.02,-364.02,443.25,-1198.95,-5.74,445.5,-1863.23,-365.52,445.5,-1199.31,-5.82,447.75,-1849.53,-366.38,447.75,-1199.69,-5.79,450.0,-1835.69,-366.7,450.0,-1200.06,-5.74,452.25,-1821.85,-366.44,452.25,-1200.44,-5.77,454.5,-1808.16,-365.55,454.5,-1200.82,-5.66,456.75,-1794.39,-364.02,456.75,-1201.09,-5.51,459.0,-1780.66,-362.03,459.0,-1201.35,-5.41,461.25,-1766.99,-359.46,461.25,-1201.6,-5.25,463.5,-1753.39,-356.19,463.5,-1201.75,-5.02,465.75,-1739.81,-352.42,465.75,-1201.88,-4.72,468.0,-1726.3,-347.95,468.0,-1201.9,-4.44,470.25,-1712.88,-343.0,470.25,-1201.7,-4.06,472.5,-1699.61,-337.6,472.5,-1201.5,-3.68,474.75,-1686.46,-331.5,474.75,-1201.18,-3.2,477.0,-1673.34,-324.86,477.0,-1200.75,-2.7,479.25,-1660.46,-317.57,479.25,-1200.2,-2.07,481.5,-1647.55,-309.8,481.5,-1199.45,-1.41,483.75,-1634.91,-301.51,483.75,-1198.59,-0.71,486.0,-1622.45,-292.6,486.0,-1197.52,0.14,488.25,-1610.07,-283.27,488.25,-1196.24,1.05,490.5,-1597.91,-273.45,490.5,-1194.86,2.02,492.75,-1585.92,-263.0,492.75,-1193.29,3.17,495.0,-1574.09,-252.02,495.0,-1191.51,4.4,497.25,-1562.49,-240.54,497.25,-1189.55,5.72,499.5,-1551.05,-228.61,499.5,-1187.29,7.24,501.75,-1539.88,-216.21,501.75,-1184.85,8.86,504.0,-1528.88,-203.34,504.0,-1182.22,10.59,506.25,-1518.2,-189.88,506.25,-1179.32,12.54,508.5,-1507.66,-176.05,508.5,-1176.25,14.61,510.75,-1497.3,-161.74,510.75,-1172.9,16.82,513.0,-1487.31,-146.95,513.0,-1169.3,19.26,515.25,-1477.49,-131.77,515.25,-1165.44,21.95,517.5,-1467.9,-116.14,517.5,-1161.23,24.79,519.75,-1458.67,-100.22,519.75,-1156.88,27.79,522.0,-1449.72,-83.72,522.0,-1152.28,31.05,524.25,-1440.88,-66.88,524.25,-1147.36,34.58,526.5,-1432.42,-49.64,526.5,-1142.21,38.37,528.75,-1424.16,-31.98,528.75,-1136.74,42.35,531.0,-1416.21,-14.08,531.0,-1130.96,46.61,533.25,-1408.6,4.18,533.25,-1124.97,51.15,535.5,-1401.2,22.86,535.5,-1118.69,55.98,537.75,-1394.07,41.84,537.75,-1112.12,61.11,540.0,-1387.21,61.11,540.0,-1105.27,41.83,542.25,-1380.65,55.97,542.25,-1098.15,22.85,544.5,-1374.37,51.14,544.5,-1090.75,4.18,546.75,-1368.39,46.6,546.75,-1083.11,-14.09,549.0,-1362.58,42.34,549.0,-1075.11,-32.05,551.25,-1357.2,38.3,551.25,-1066.97,-49.71,553.5,-1352.03,34.65,553.5,-1058.39,-66.85,555.75,-1347.06,31.01,555.75,-1049.69,-83.68,558.0,-1342.39,27.83,558.0,-1040.68,-100.2,560.25,-1338.05,24.74,560.25,-1031.35,-116.21,562.5,-1333.95,21.89,562.5,-1021.83,-131.8,564.75,-1330.09,19.31,564.75,-1012.02,-146.98,567.0,-1326.49,16.85,567.0,-1002.02,-161.75,569.25,-1323.07,14.6,569.25,-991.74,-176.01,571.5,-1319.94,12.58,571.5,-981.2,-189.95,573.75,-1317.11,10.58,573.75,-970.4,-203.29,576.0,-1314.44,8.77,576.0,-959.46,-216.22,578.25,-1312.05,7.22,578.25,-948.26,-228.65,580.5,-1309.84,5.76,580.5,-936.84,-240.57,582.75,-1307.82,4.37,582.75,-925.29,-251.99,585.0,-1305.95,3.2,585.0,-913.42,-263.02,587.25,-1304.48,2.01,587.25,-901.44,-273.45,589.5,-1303.1,1.05,589.5,-889.25,-283.29,591.75,-1301.81,0.11,591.75,-876.87,-292.65,594.0,-1300.74,-0.76,594.0,-864.4,-301.53,596.25,-1299.87,-1.43,596.25,-851.75,-309.82,598.5,-1299.1,-2.09,598.5,-838.93,-317.65,600.75,-1298.58,-2.7,600.75,-825.93,-324.81,603.0,-1298.1,-3.29,603.0,-812.88,-331.41,605.25,-1297.77,-3.66,605.25,-799.67,-337.55,607.5,-1297.57,-4.14,607.5,-786.41,-343.04,609.75,-1297.46,-4.4,609.75,-773.01,-347.98,612.0,-1297.42,-4.75,612.0,-759.46,-352.39,614.25,-1297.6,-5.06,614.25,-745.99,-356.16,616.5,-1297.7,-5.15,616.5,-732.29,-359.41,618.75,-1297.93,-5.5,618.75,-718.66,-362.04,621.0,-1298.17,-5.59,621.0,-704.92,-364.06,623.25,-1298.49,-5.7,623.25,-691.16,-365.58,625.5,-1298.88,-5.8,625.5,-677.4,-366.4,627.75,-1299.18,-5.84,627.75,-663.62,-366.73,630.0,-1299.62,-5.82,630.0,-649.85,-366.48,632.25,-1300.06,-5.78,632.25,-636.07,-365.55,634.5,-1300.35,-5.77,634.5,-622.29,-364.06,636.75,-1300.72,-5.7,636.75,-608.62,-362.01,639.0,-1301.05,-5.49,639.0,-594.96,-359.41,641.25,-1301.32,-5.36,641.25,-581.31,-356.17,643.5,-1301.52,-5.23,643.5,-567.76,-352.4,645.75,-1301.7,-5.0,645.75,-554.23,-348.0,648.0,-1301.81,-4.77,648.0,-540.81,-343.08,650.25,-1301.83,-4.52,650.25,-527.61,-337.56,652.5,-1301.7,-4.02,652.5,-514.41,-331.44,654.75,-1301.45,-3.62,654.75,-501.33,-324.82,657.0,-1301.17,-3.16,657.0,-488.36,-317.52,659.25,-1300.65,-2.65,659.25,-475.51,-309.85,661.5,-1300.16,-2.12,661.5,-462.86,-301.51,663.75,-1299.4,-1.41,663.75,-450.32,-292.61,666.0,-1298.46,-0.72,666.0,-437.99,-283.26,668.25,-1297.44,0.15,668.25,-425.87,-273.37,670.5,-1296.2,1.13,670.5,-413.85,-262.94,672.75,-1294.79,2.08,672.75,-402.02,-251.99,675.0,-1293.22,3.2,675.0,-390.4,-240.52,677.25,-1291.42,4.42,677.25,-378.96,-228.64,679.5,-1289.46,5.69,679.5,-367.82,-216.16,681.75,-1287.23,7.29,681.75,-356.86,-203.28,684.0,-1284.83,8.93,684.0,-346.09,-189.81,686.25,-1282.11,10.66,686.25,-335.59,-175.96,688.5,-1279.25,12.63,688.5,-325.26,-161.73,690.75,-1276.21,14.62,690.75,-315.21,-146.94,693.0,-1272.8,16.83,693.0,-305.41,-131.78,695.25,-1269.22,19.25,695.25,-295.87,-116.17,697.5,-1265.41,21.92,697.5,-286.68,-100.11,699.75,-1261.24,24.9,699.75,-277.63,-83.61,702.0,-1256.79,27.9,702.0,-268.83,-66.87,704.25,-1252.23,31.07,704.25,-260.35,-49.6,706.5,-1247.29,34.62,706.5,-252.1,-31.99,708.75,-1242.15,38.36,708.75,-244.17,-14.07,711.0,-1236.7,42.36,711.0,-236.55,4.27,713.25,-1230.91,46.7,713.25,-229.14,22.93,715.5,-1224.91,51.22,715.5,-222.02,41.9,717.75,-1218.64,56.04,717.75,-215.19,61.17,720.0,-1212.1,61.17,720.0,-208.82,68.11,722.17,-1205.47,54.46,722.17,-203.08,74.85,724.2,-1199.02,48.4,724.2,-197.81,81.48,726.15,-1192.64,42.8,726.15,-192.87,88.16,728.06,-1186.22,37.54,728.06,-188.14,95.02,729.98,-1179.59,32.47,729.98,-183.51,102.24,731.95,-1172.6,27.49,731.95,-178.92,110.0,734.03,-1165.07,22.52,734.03,-174.31,118.49,736.25,-1156.8,17.5,736.25,-169.68,127.92,738.67,-1147.6,12.4,738.67,-165.04,138.52,741.33,-1137.24,7.25,741.33,-160.49,150.5,744.28,-1125.48,2.11,744.28,-156.15,164.1,747.56,-1112.09,-2.89,747.56,-152.23,179.56,751.23,-1096.84,-7.57,751.23,-149.03,197.08,755.33,-1079.48,-11.62,755.33,-146.95,216.85,759.9,-1059.82,-14.67,759.9,-146.5,239.0,765.0,-1037.7,-16.21,765.0,-143.6,228.6,769.35,-1019.42,-31.93,769.5,-140.5,224.4,773.53,-1000.77,-46.92,774.0,-137.6,220.5,777.57,-981.79,-61.15,778.5,-134.8,216.8,781.45,-962.51,-74.58,783.0,-132.1,213.4,785.18,-942.98,-87.2,787.5,-129.5,209.7,788.77,-923.23,-98.99,792.0,-126.8,205.7,792.22,-903.31,-109.93,796.5,-124.2,202.0,795.53,-883.25,-120.01,801.0,-121.5,198.5,798.71,-863.11,-129.23,805.5,-118.8,195.3,801.76,-842.92,-137.57,810.0,-116.1,192.4,804.68,-822.73,-145.04,814.5,-113.3,189.8,807.49,-802.59,-151.64,819.0,-110.4,187.5,810.17,-782.53,-157.37,823.5,-107.4,185.5,812.74,-762.61,-162.24,828.0,-104.3,183.8,815.19,-742.86,-166.26,832.5,-101.2,182.3,817.54,-723.32,-169.45,837.0,-97.9,181.2,819.78,-704.05,-171.83,841.5,-94.6,180.3,821.92,-685.07,-173.42,846.0,-91.2,179.8,823.97,-666.42,-174.25,850.5,-87.8,179.6,825.91,-648.13,-174.33,855.0,-84.3,179.6,827.76,-630.25,-173.71,859.5,-80.7,180.0,829.53,-612.8,-172.4,864.0,-77.0,180.7,831.2,-595.8,-170.46,868.5,-73.3,181.6,832.79,-579.29,-167.92,873.0,-69.6,182.5,834.3,-563.27,-164.8,877.5,-65.9,183.7,835.73,-547.78,-161.16,882.0,-62.1,185.2,837.09,-532.83,-157.04,886.5,-58.3,187.0,838.37,-518.43,-152.48,891.0,-54.4,189.2,839.59,-504.58,-147.52,895.5,-50.6,191.7,840.73,-491.3,-142.2,900.0,-46.8,194.6,841.81,-478.58,-136.58,904.5,-42.9,197.8,842.83,-466.43,-130.69,909.0,-39.1,201.3,843.79,-454.83,-124.58,913.5,-35.3,205.1,844.69,-443.78,-118.29,918.0,-31.5,209.3,845.53,-433.27,-111.87,922.5,-27.8,213.8,846.32,-423.29,-105.35,927.0,-24.0,218.6,847.07,-413.8,-98.78,931.5,-20.3,223.7,847.76,-404.8,-92.2,936.0,-16.7,229.2,848.4,-396.25,-85.64,940.5,-13.1,235.0,849.01,-388.13,-79.14,945.0,-9.5,232.5,849.57,-380.42,-72.73,949.5,-6.0,230.0,850.09,-373.07,-66.43,954.0,-2.5,227.8,850.57,-366.05,-60.29,958.5,0.9,225.9,851.01,-359.32,-54.32,963.0,4.3,224.3,851.42,-352.86,-48.54,967.5,7.6,223.1,851.8,-346.61,-42.97,972.0,10.8,222.2,852.15,-340.53,-37.63,976.5,14.0,221.6,852.47,-334.59,-32.53,981.0,17.0,221.3,852.76,-328.73,-27.68,985.5,20.1,221.3,853.02,-322.92,-23.09,990.0,23.0,221.7,853.26,-317.11,-18.74,994.5,25.9,222.4,853.48,-311.25,-14.66,999.0,28.6,223.4,853.68,-305.31,-10.82,1003.5,31.3,224.7,853.86,-299.23,-7.22,1008.0,34.0,226.3,854.01,-292.98,-3.85,1012.5,36.5,228.2,854.16,-286.51,-0.69,1017.0,38.9,230.5,854.28,-279.79,2.27,1021.5,41.3,233.1,854.39,-272.77,5.07,1026.0,43.6,232.1,854.49,-265.42,7.71,1030.5,45.8,231.3,854.58,-257.7,10.24,1035.0,47.9,230.8,854.65,-249.58,12.67,1039.5,49.9,230.6,854.71,-241.04,15.05,1044.0,51.8,230.7,854.77,-232.03,17.4,1048.5,53.6,231.1,854.82,-222.55,19.77,1053.0,55.3,231.8,854.85,-212.56,22.19,1057.5,56.9,232.8,854.89,-202.05,24.71,1062.0,58.4,232.7,854.91,-191.0,27.36,1066.5,59.8,232.5,854.94,-179.41,30.19,1071.0,61.1,232.7,854.95,-167.25,33.23,1075.5,62.4,233.0,854.97,-154.54,36.55,1080.0,63.5,233.0,854.98,-141.25,40.17,1084.5,64.5,233.0,854.98,-132.2,39.16,1086.46,65.4,233.0,854.99,-127.44,33.87,1086.08,66.2,233.0,854.99,-122.67,28.89,1085.7,66.9,233.0,855.0,-117.89,24.22,1085.32,67.5,233.0,855.0,-113.11,19.85,1084.94,68.0,233.0,855.0,-108.33,15.8,1084.56,68.4,233.0,855.0,-103.55,12.05,1084.18,68.7,233.0,855.0,-98.76,8.6,1083.81,68.9,233.0,855.0,-93.96,5.45,1083.45,69.0,233.0,855.0,-89.16,2.6,1083.09,69.0,233.0,855.0,-84.36,0.04,1082.75,69.0,233.0,855.0,-79.55,-2.24,1082.42,69.0,233.0,855.0,-74.74,-4.23,1082.1,69.0,233.0,855.0,-69.92,-5.93,1081.8,69.0,233.0,855.0,-65.1,-7.36,1081.52,69.0,233.0,855.0,-60.28,-8.51,1081.26,69.0,233.0,855.0,-55.46,-9.39,1081.03,69.0,233.0,855.0,-50.63,-10.0,1080.82,69.0,233.0,855.0,-45.8,-10.34,1080.63,69.0,233.0,855.0,-40.97,-10.41,1080.47,69.0,233.0,855.0,-36.14,-10.22,1080.34,69.0,233.0,855.0,-31.31,-9.75,1080.23,69.0,233.0,855.0,-26.48,-9.02,1080.14,69.0,233.0,855.0,-21.65,-8.01,1080.08,69.0,233.0,855.0,-16.82,-6.72,1080.04,69.0,233.0,855.0,-11.98,-5.15,1080.02,69.0,233.0,855.0,-7.15,-3.29,1080.0,69.0,233.0,855.0,-2.32,-1.14,1080.0,69.0,233.0,855.0,2.36,1.12,1080.0,69.0,233.0,855.0,6.1,2.9,1080.0,69.0,233.0,855.0,8.92,4.24,1080.0,69.0,233.0,855.0,10.96,5.21,1080.0,69.0,233.0,855.0,12.35,5.87,1080.0,69.0,233.0,855.0,13.19,6.27,1080.0,69.0,233.0,855.0,13.59,6.46,1080.0,69.0,233.0,855.0,13.64,6.49,1080.0,69.0,233.0,855.0,13.4,6.37,1080.0,69.0,233.0,855.0,12.95,6.16,1080.0,69.0,233.0,855.0,12.33,5.86,1080.0,69.0,233.0,855.0,11.6,5.52,1080.0,69.0,233.0,855.0,10.79,5.13,1080.0,69.0,233.0,855.0,9.94,4.73,1080.0,69.0,233.0,855.0,9.08,4.32,1080.0,69.0,233.0,855.0,8.21,3.9,1080.0,69.0,233.0,855.0,7.37,3.5,1080.0,69.0,233.0,855.0,6.56,3.12,1080.0,69.0,233.0,855.0,5.79,2.75,1080.0,69.0,233.0,855.0,5.07,2.41,1080.0,69.0,233.0,855.0,4.4,2.09,1080.0,69.0,233.0,855.0,3.79,1.8,1080.0,69.0,233.0,855.0,3.23,1.54,1080.0,69.0,233.0,855.0,2.73,1.3,1080.0,69.0,233.0,855.0,2.28,1.08,1080.0,69.0,233.0,855.0,1.88,0.89,1080.0,69.0,233.0,855.0,1.53,0.73,1080.0,69.0,233.0,855.0,1.22,0.58,1080.0,69.0,233.0,855.0,0.95,0.45,1080.0,69.0,233.0,855.0,0.72,0.34,1080.0,69.0,233.0,855.0,0.53,0.25,1080.0,69.0,233.0,855.0,0.37,0.17,1080.0,69.0,233.0,855.0,0.23,0.11,1080.0,69.0,233.0,855.0,0.12,0.06,1080.0,69.0,233.0,855.0,0.03,0.01,1080.0,69.0,233.0,855.0,-0.04,-0.02,1080.0,69.0,233.0,855.0,-0.1,-0.05,1080.0,69.0,233.0,855.0,-0.14,-0.07,1080.0,69.0,233.0,855.0,-0.17,-0.08,1080.0,69.0,233.0,855.0,-0.19,-0.09,1080.0,69.0,233.0,855.0,-0.2,-0.1,1080.0,69.0,233.0,855.0,-0.21,-0.1,1080.0,69.0,233.0,855.0,-0.21,-0.1,1080.0,69.0,233.0,855.0,-0.2,-0.1,1080.0,69.0,233.0,855.0,-0.2,-0.09,1080.0,69.0,233.0,855.0,-0.19,-0.09,1080.0,69.0,233.0,855.0,-0.17,-0.08,1080.0,69.0,233.0,855.0,-0.16,-0.08,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.46,2.09,1080.51,69.0,233.0,855.0,0.83,3.75,1080.92,69.0,233.0,855.0,1.1,4.95,1081.21,69.0,233.0,855.0,1.26,5.67,1081.39,69.0,233.0,855.0,1.32,5.93,1081.45,69.0,233.0,855.0,1.28,5.78,1081.41,69.0,233.0,855.0,1.17,5.28,1081.29,69.0,233.0,855.0,1.0,4.51,1081.1,69.0,233.0,855.0,0.79,3.56,1080.87,69.0,233.0,855.0,0.56,2.51,1080.61,69.0,233.0,855.0,0.32,1.45,1080.35,69.0,233.0,855.0,0.1,0.44,1080.11,69.0,233.0,855.0,-0.1,-0.46,1079.89,69.0,233.0,855.0,-0.27,-1.21,1079.7,69.0,233.0,855.0,-0.4,-1.78,1079.56,69.0,233.0,855.0,-0.48,-2.16,1079.47,69.0,233.0,855.0,-0.52,-2.35,1079.43,69.0,233.0,855.0,-0.52,-2.36,1079.42,69.0,233.0,855.0,-0.49,-2.22,1079.46,69.0,233.0,855.0,-0.44,-1.96,1079.52,69.0,233.0,855.0,-0.36,-1.61,1079.61,69.0,233.0,855.0,-0.27,-1.2,1079.71,69.0,233.0,855.0,-0.17,-0.78,1079.81,69.0,233.0,855.0,-0.08,-0.36,1079.91,69.0,233.0,855.0,0.01,0.02,1080.01,69.0,233.0,855.0,0.08,0.35,1080.09,69.0,233.0,855.0,0.14,0.62,1080.15,69.0,233.0,855.0,0.18,0.8,1080.2,69.0,233.0,855.0,0.2,0.91,1080.22,69.0,233.0,855.0,0.21,0.95,1080.23,69.0,233.0,855.0,0.2,0.92,1080.23,69.0,233.0,855.0,0.19,0.84,1080.2,69.0,233.0,855.0,0.16,0.71,1080.17,69.0,233.0,855.0,0.12,0.56,1080.14,69.0,233.0,855.0,0.09,0.39,1080.1,69.0,233.0,855.0,0.05,0.22,1080.05,69.0,233.0,855.0,0.01,0.06,1080.01,69.0,233.0,855.0,-0.02,-0.08,1079.98,69.0,233.0,855.0,-0.04,-0.2,1079.95,69.0,233.0,855.0,-0.06,-0.29,1079.93,69.0,233.0,855.0,-0.08,-0.35,1079.91,69.0,233.0,855.0,-0.08,-0.38,1079.91,69.0,233.0,855.0,-0.08,-0.38,1079.91,69.0,233.0,855.0,-0.08,-0.35,1079.91,69.0,233.0,855.0,-0.07,-0.31,1079.92,69.0,233.0,855.0,-0.06,-0.25,1079.94,69.0,233.0,855.0,-0.04,-0.19,1079.95,69.0,233.0,855.0,-0.03,-0.12,1079.97,69.0,233.0,855.0,-0.01,-0.05,1079.99,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,0.01,0.06,1080.01,69.0,233.0,855.0,0.02,0.1,1080.02,69.0,233.0,855.0,0.03,0.13,1080.03,69.0,233.0,855.0,0.03,0.15,1080.04,69.0,233.0,855.0,0.03,0.15,1080.04,69.0,233.0,855.0,0.03,0.15,1080.04,69.0,233.0,855.0,0.03,0.13,1080.03,69.0,233.0,855.0,0.02,0.11,1080.03,69.0,233.0,855.0,0.02,0.09,1080.02,69.0,233.0,855.0,0.01,0.06,1080.01,69.0,233.0,855.0,0.01,0.03,1080.01,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.01,-0.03,1079.99,69.0,233.0,855.0,-0.01,-0.05,1079.99,69.0,233.0,855.0,-0.01,-0.06,1079.99,69.0,233.0,855.0,-0.01,-0.06,1079.99,69.0,233.0,855.0,-0.01,-0.06,1079.99,69.0,233.0,855.0,-0.01,-0.06,1079.99,69.0,233.0,855.0,-0.01,-0.05,1079.99,69.0,233.0,855.0,-0.01,-0.04,1079.99,69.0,233.0,855.0,-0.01,-0.03,1079.99,69.0,233.0,855.0,-0.0,-0.02,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,0.0,0.02,1080.0,69.0,233.0,855.0,0.0,0.02,1080.01,69.0,233.0,855.0,0.01,0.02,1080.01,69.0,233.0,855.0,0.01,0.02,1080.01,69.0,233.0,855.0,0.01,0.02,1080.01,69.0,233.0,855.0,0.0,0.02,1080.01,69.0,233.0,855.0,0.0,0.02,1080.0,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,0.0,0.01,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.01,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,0.0,0.0,1080.0,69.0,233.0,855.0,-0.0,-0.0,1080.0,68.92,227.07,856.36,-0.0,-0.0,1080.0,69.07,217.94,858.47,-0.0,-0.0,1080.0,69.75,206.22,861.17,-0.0,-0.0,1080.0,71.25,192.59,864.33,-0.0,-0.0,1080.0,73.77,177.7,867.8,-0.0,-0.0,1080.0,77.38,162.25,871.45,-0.0,-0.0,1080.0,82.01,146.93,875.14,-0.0,-0.0,1080.0,87.45,132.35,878.72,-0.0,-0.0,1080.0,93.32,119.1,882.05,-0.0,-0.0,1080.0,99.15,107.69,885.0,-0.0,-0.0,1080.0,94.25,91.34,887.71,-0.0,-0.0,1080.0,89.55,75.24,890.42,0.0,0.0,1080.0,85.05,59.43,893.12,0.0,0.0,1080.0,80.75,43.9,895.83,0.0,0.0,1080.0,76.66,28.66,898.54,0.0,0.0,1080.0,72.77,13.73,901.25,0.0,0.0,1080.0,69.09,-0.89,903.96,0.0,0.0,1080.0,65.62,-15.19,906.67,0.0,0.0,1080.0,62.34,-29.15,909.38,0.0,0.0,1080.0,59.27,-42.77,912.08,0.0,0.0,1080.0,56.4,-56.04,914.79,0.0,0.0,1080.0,53.72,-68.94,917.5,0.0,0.0,1080.0,51.24,-81.48,920.21,0.0,0.0,1080.0,48.96,-93.63,922.92,0.0,0.0,1080.0,46.86,-105.4,925.62,-0.0,-0.0,1080.0,44.94,-116.76,928.33,-0.0,-0.0,1080.0,43.21,-127.73,931.04,-0.0,-0.0,1080.0,41.65,-138.27,933.75,-0.0,-0.0,1080.0,40.26,-148.39,936.46,-0.0,-0.0,1080.0,39.04,-158.09,939.17,-0.0,-0.0,1080.0,37.97,-167.34,941.88,-0.0,-0.0,1080.0,37.06,-176.15,944.58,-0.0,-0.0,1080.0,36.29,-184.5,947.29,-0.0,-0.0,1080.0,35.66,-192.4,950.0,-0.0,-0.0,1080.0,35.17,-199.82,952.71,-0.0,-0.0,1080.0,34.8,-206.78,955.42,-0.0,-0.0,1080.0,34.54,-213.26,958.12,0.0,0.0,1080.0,34.39,-219.25,960.83,0.0,0.0,1080.0,34.34,-224.76,963.54,0.0,0.0,1080.0,34.39,-229.78,966.25,0.0,0.0,1080.0,34.51,-234.29,968.96,0.0,0.0,1080.0,34.71,-238.31,971.67,0.0,0.0,1080.0,34.97,-241.83,974.38,0.0,0.0,1080.0,35.29,-244.83,977.08,0.0,0.0,1080.0,35.65,-247.33,979.79,0.0,0.0,1080.0,36.05,-249.32,982.5,0.0,0.0,1080.0,36.48,-250.79,985.21,0.0,0.0,1080.0,36.92,-251.76,987.92,0.0,0.0,1080.0,37.38,-252.2,990.62,-0.0,-0.0,1080.0,37.82,-252.14,993.33,-0.0,-0.0,1080.0,38.26,-251.56,996.04,-0.0,-0.0,1080.0,38.68,-250.47,998.75,-0.0,-0.0,1080.0,39.06,-248.86,1001.46,-0.0,-0.0,1080.0,39.41,-246.75,1004.17,-0.0,-0.0,1080.0,39.7,-244.13,1006.88,-0.0,-0.0,1080.0,39.93,-241.0,1009.58,-0.0,-0.0,1080.0,40.1,-237.37,1012.29,-0.0,-0.0,1080.0,40.19,-233.24,1015.0,-0.0,-0.0,1080.0,40.19,-228.62,1017.71,-0.0,-0.0,1080.0,40.1,-223.5,1020.42,-0.0,-0.0,1080.0,39.9,-217.9,1023.12,-0.0,-0.0,1080.0,39.59,-211.82,1025.83,0.0,0.0,1080.0,39.16,-205.27,1028.54,0.0,0.0,1080.0,38.61,-198.24,1031.25,0.0,0.0,1080.0,37.91,-190.75,1033.96,0.0,0.0,1080.0,37.08,-182.81,1036.67,0.0,0.0,1080.0,36.1,-174.41,1039.38,0.0,0.0,1080.0,34.96,-165.58,1042.08,0.0,0.0,1080.0,33.66,-156.3,1044.79,0.0,0.0,1080.0,32.2,-146.6,1047.5,0.0,0.0,1080.0,30.56,-136.49,1050.21,0.0,0.0,1080.0,28.74,-125.95,1052.92,0.0,0.0,1080.0,26.74,-115.02,1055.62,0.0,0.0,1080.0,24.56,-103.69,1058.33,-0.0,-0.0,1080.0,22.18,-91.98,1061.04,-0.0,-0.0,1080.0,19.61,-79.9,1063.75,-0.0,-0.0,1080.0,16.85,-67.44,1066.46,-0.0,-0.0,1080.0,13.88,-54.63,1069.17,-0.0,-0.0,1080.0,10.72,-41.47,1071.88,-0.0,-0.0,1080.0,7.35,-27.97,1074.58,-0.0,-0.0,1080.0,3.78,-14.15,1077.29,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,-3.74,14.04,1082.42,-0.0,-0.0,1080.0,-7.17,27.4,1084.3,-0.0,-0.0,1080.0,-10.21,39.89,1085.71,-0.0,-0.0,1080.0,-12.84,51.3,1086.71,-0.0,-0.0,1080.0,-15.08,61.42,1087.37,-0.0,-0.0,1080.0,-16.91,70.05,1087.77,-0.0,-0.0,1080.0,-18.38,76.98,1087.95,-0.0,-0.0,1080.0,-19.51,82.0,1088.0,-0.0,-0.0,1080.0,-20.28,79.89,1087.63,-0.0,-0.0,1080.0,-20.85,77.57,1087.25,-0.0,-0.0,1080.0,-21.21,75.06,1086.88,-0.0,-0.0,1080.0,-21.38,72.37,1086.51,-0.0,-0.0,1080.0,-21.37,69.52,1086.14,-0.0,-0.0,1080.0,-21.21,66.53,1085.78,-0.0,-0.0,1080.0,-20.89,63.43,1085.42,-0.0,-0.0,1080.0,-20.43,60.21,1085.06,-0.0,-0.0,1080.0,-19.85,56.92,1084.71,-0.0,-0.0,1080.0,-19.15,53.56,1084.37,-0.0,-0.0,1080.0,-18.35,50.15,1084.04,-0.0,-0.0,1080.0,-17.46,46.71,1083.71,-0.0,-0.0,1080.0,-16.5,43.26,1083.39,-0.0,-0.0,1080.0,-15.47,39.81,1083.08,-0.0,-0.0,1080.0,-14.39,36.39,1082.79,-0.0,-0.0,1080.0,-13.27,33.02,1082.5,-0.0,-0.0,1080.0,-12.13,29.71,1082.22,-0.0,-0.0,1080.0,-10.97,26.48,1081.96,-0.0,-0.0,1080.0,-9.8,23.35,1081.71,-0.0,-0.0,1080.0,-8.65,20.33,1081.48,-0.0,-0.0,1080.0,-7.52,17.46,1081.26,-0.0,-0.0,1080.0,-6.42,14.73,1081.05,-0.0,-0.0,1080.0,-5.36,12.18,1080.86,-0.0,-0.0,1080.0,-4.37,9.82,1080.69,-0.0,-0.0,1080.0,-3.41,7.58,1080.53,-0.0,-0.0,1080.0,-2.49,5.5,1080.38,-0.0,-0.0,1080.0,-1.69,3.69,1080.25,-0.0,-0.0,1080.0,-1.03,2.24,1080.15,-0.0,-0.0,1080.0,-0.54,1.17,1080.08,-0.0,-0.0,1080.0,-0.22,0.47,1080.03,-0.0,-0.0,1080.0,-0.05,0.1,1080.01,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,-0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0,0.0,0.0,1080.0,-0.0,-0.0,1080.0],"sp":{"P":{"f0":-40,"d":[-1474.17,1141.11,29.0,29.0,-180.0,-1467.46,1128.9,29.0,29.0,-177.75,-1460.76,1117.0,29.0,29.0,-175.5,-1454.07,1105.39,29.0,29.0,-173.25,-1447.34,1094.12,29.0,29.0,-171.0,-1440.62,1083.09,29.0,29.0,-168.75,-1433.96,1072.44,29.0,29.0,-166.5,-1427.23,1062.08,29.0,29.0,-164.25,-1420.51,1052.04,29.0,29.0,-162.0,-1413.9,1042.31,29.0,29.0,-159.75,-1407.19,1032.88,29.0,29.0,-157.5,-1400.42,1023.72,29.0,29.0,-155.25,-1393.72,1014.9,29.0,29.0,-153.0,-1387.04,1006.43,29.0,29.0,-150.75,-1380.31,998.25,29.0,29.0,-148.5,-1373.66,990.31,29.0,29.0,-146.25,-1366.96,982.77,29.0,29.0,-144.0,-1360.25,975.5,29.0,29.0,-141.75,-1353.52,968.52,29.0,29.0,-139.5,-1346.83,961.9,29.0,29.0,-137.25,-1340.08,955.57,29.0,29.0,-135.0,-1333.45,949.49,29.0,29.0,-132.75,-1326.77,943.8,29.0,29.0,-130.5,-1320.03,938.41,29.0,29.0,-128.25,-1313.31,933.3,29.0,29.0,-126.0,-1306.64,928.52,29.0,29.0,-123.75,-1299.93,924.04,29.0,29.0,-121.5,-1293.25,919.82,29.0,29.0,-119.25,-1286.55,915.99,29.0,29.0,-117.0,-1279.79,912.43,29.0,29.0,-114.75,-1273.16,909.19,29.0,29.0,-112.5,-1266.4,906.25,29.0,29.0,-110.25,-1259.72,903.63,29.0,29.0,-108.0,-1253.03,901.28,29.0,29.0,-105.75,-1246.35,899.34,29.0,29.0,-103.5,-1239.65,897.58,29.0,29.0,-101.25,-1232.95,896.22,29.0,29.0,-99.0,-1226.21,895.12,29.0,29.0,-96.75,-1219.52,894.31,29.0,29.0,-94.5,-1212.83,893.92,29.0,29.0,-92.25,-1206.12,893.73,29.0,29.0,-90.0,-1199.49,893.91,29.0,29.0,-87.75,-1192.71,894.34,29.0,29.0,-85.5,-1186.01,895.12,29.0,29.0,-83.25,-1179.34,896.25,29.0,29.0,-81.0,-1172.67,897.65,29.0,29.0,-78.75,-1165.95,899.33,29.0,29.0,-76.5,-1159.27,901.34,29.0,29.0,-74.25,-1152.52,903.62,29.0,29.0,-72.0,-1145.82,906.2,29.0,29.0,-69.75,-1139.19,909.25,29.0,29.0,-67.5,-1132.43,912.47,29.0,29.0,-65.25,-1125.79,916.05,29.0,29.0,-63.0,-1118.97,919.88,29.0,29.0,-60.75,-1112.34,924.02,29.0,29.0,-58.5,-1105.63,928.54,29.0,29.0,-56.25,-1098.89,933.34,29.0,29.0,-54.0,-1092.22,938.44,29.0,29.0,-51.75,-1085.54,943.88,29.0,29.0,-49.5,-1078.82,949.57,29.0,29.0,-47.25,-1072.08,955.57,29.0,29.0,-45.0,-1065.41,961.95,29.0,29.0,-42.75,-1058.71,968.53,29.0,29.0,-40.5,-1052.02,975.57,29.0,29.0,-38.25,-1045.38,982.86,29.0,29.0,-36.0,-1038.57,990.39,29.0,29.0,-33.75,-1031.89,998.3,29.0,29.0,-31.5,-1025.24,1006.44,29.0,29.0,-29.25,-1018.5,1014.94,29.0,29.0,-27.0,-1011.82,1023.73,29.0,29.0,-24.75,-1005.18,1032.91,29.0,29.0,-22.5,-998.46,1042.39,29.0,29.0,-20.25,-991.68,1052.11,29.0,29.0,-18.0,-985.06,1062.13,29.0,29.0,-15.75,-978.29,1072.48,29.0,29.0,-13.5,-971.59,1083.15,29.0,29.0,-11.25,-964.93,1094.14,29.0,29.0,-9.0,-958.23,1105.49,29.0,29.0,-6.75,-951.52,1117.07,29.0,29.0,-4.5,-944.83,1128.97,29.0,29.0,-2.25,-938.14,1141.17,29.0,29.0,0.0,-931.45,1128.98,29.0,29.0,2.25,-924.75,1117.09,29.0,29.0,4.5,-918.04,1105.49,29.0,29.0,6.75,-911.37,1094.16,29.0,29.0,9.0,-904.62,1083.22,29.0,29.0,11.25,-897.88,1072.47,29.0,29.0,13.5,-891.28,1062.2,29.0,29.0,15.75,-884.53,1052.07,29.0,29.0,18.0,-877.88,1042.34,29.0,29.0,20.25,-871.19,1032.98,29.0,29.0,22.5,-864.42,1023.79,29.0,29.0,24.75,-857.72,1015.01,29.0,29.0,27.0,-851.07,1006.46,29.0,29.0,29.25,-844.33,998.26,29.0,29.0,31.5,-837.65,990.37,29.0,29.0,33.75,-831.02,982.88,29.0,29.0,36.0,-824.26,975.58,29.0,29.0,38.25,-817.52,968.59,29.0,29.0,40.5,-810.88,961.98,29.0,29.0,42.75,-804.15,955.64,29.0,29.0,45.0,-797.46,949.59,29.0,29.0,47.25,-790.74,943.88,29.0,29.0,49.5,-784.08,938.47,29.0,29.0,51.75,-777.4,933.38,29.0,29.0,54.0,-770.67,928.56,29.0,29.0,56.25,-763.98,924.04,29.0,29.0,58.5,-757.26,919.86,29.0,29.0,60.75,-750.63,916.06,29.0,29.0,63.0,-743.85,912.48,29.0,29.0,65.25,-737.23,909.26,29.0,29.0,67.5,-730.44,906.26,29.0,29.0,69.75,-723.79,903.65,29.0,29.0,72.0,-717.08,901.4,29.0,29.0,74.25,-710.36,899.34,29.0,29.0,76.5,-703.74,897.67,29.0,29.0,78.75,-697.03,896.23,29.0,29.0,81.0,-690.3,895.16,29.0,29.0,83.25,-683.59,894.37,29.0,29.0,85.5,-676.96,893.94,29.0,29.0,87.75,-670.19,893.75,29.0,29.0,90.0,-663.49,893.94,29.0,29.0,92.25,-656.8,894.34,29.0,29.0,94.5,-650.1,895.16,29.0,29.0,96.75,-643.37,896.23,29.0,29.0,99.0,-636.71,897.6,29.0,29.0,101.25,-630.03,899.32,29.0,29.0,103.5,-623.31,901.31,29.0,29.0,105.75,-616.59,903.66,29.0,29.0,108.0,-609.89,906.28,29.0,29.0,110.25,-603.19,909.2,29.0,29.0,112.5,-596.48,912.41,29.0,29.0,114.75,-589.79,916.01,29.0,29.0,117.0,-583.07,919.83,29.0,29.0,119.25,-576.37,924.06,29.0,29.0,121.5,-569.68,928.54,29.0,29.0,123.75,-563.02,933.34,29.0,29.0,126.0,-556.29,938.44,29.0,29.0,128.25,-549.57,943.8,29.0,29.0,130.5,-542.89,949.51,29.0,29.0,132.75,-536.15,955.54,29.0,29.0,135.0,-529.5,961.93,29.0,29.0,137.25,-522.8,968.55,29.0,29.0,139.5,-516.09,975.52,29.0,29.0,141.75,-509.4,982.79,29.0,29.0,144.0,-502.67,990.32,29.0,29.0,146.25,-495.95,998.21,29.0,29.0,148.5,-489.27,1006.44,29.0,29.0,150.75,-482.61,1014.94,29.0,29.0,153.0,-475.89,1023.75,29.0,29.0,155.25,-469.21,1032.94,29.0,29.0,157.5,-462.45,1042.29,29.0,29.0,159.75,-455.76,1052.0,29.0,29.0,162.0,-449.12,1062.12,29.0,29.0,164.25,-442.35,1072.43,29.0,29.0,166.5,-435.65,1083.16,29.0,29.0,168.75,-428.98,1094.14,29.0,29.0,171.0,-422.28,1105.39,29.0,29.0,173.25,-415.59,1117.01,29.0,29.0,175.5,-408.88,1128.91,29.0,29.0,177.75,-402.17,1141.11,29.0,29.0,180.0,-395.46,1128.9,29.0,29.0,182.25,-388.76,1117.0,29.0,29.0,184.5,-382.07,1105.39,29.0,29.0,186.75,-375.34,1094.12,29.0,29.0,189.0,-368.62,1083.09,29.0,29.0,191.25,-361.96,1072.44,29.0,29.0,193.5,-355.23,1062.08,29.0,29.0,195.75,-348.51,1052.04,29.0,29.0,198.0,-341.9,1042.31,29.0,29.0,200.25,-335.19,1032.88,29.0,29.0,202.5,-328.42,1023.72,29.0,29.0,204.75,-321.72,1014.9,29.0,29.0,207.0,-315.04,1006.43,29.0,29.0,209.25,-308.31,998.25,29.0,29.0,211.5,-301.66,990.31,29.0,29.0,213.75,-294.96,982.77,29.0,29.0,216.0,-288.25,975.5,29.0,29.0,218.25,-281.52,968.52,29.0,29.0,220.5,-274.83,961.9,29.0,29.0,222.75,-268.15,955.64,29.0,29.0,225.0,-261.45,949.49,29.0,29.0,227.25,-254.77,943.8,29.0,29.0,229.5,-248.03,938.41,29.0,29.0,231.75,-241.31,933.3,29.0,29.0,234.0,-234.64,928.52,29.0,29.0,236.25,-227.93,924.04,29.0,29.0,238.5,-221.25,919.82,29.0,29.0,240.75,-214.55,915.99,29.0,29.0,243.0,-207.79,912.43,29.0,29.0,245.25,-201.16,909.19,29.0,29.0,247.5,-194.4,906.25,29.0,29.0,249.75,-187.72,903.63,29.0,29.0,252.0,-181.03,901.28,29.0,29.0,254.25,-174.35,899.34,29.0,29.0,256.5,-167.65,897.58,29.0,29.0,258.75,-160.95,896.22,29.0,29.0,261.0,-154.21,895.12,29.0,29.0,263.25,-147.52,894.31,29.0,29.0,265.5,-140.83,893.92,29.0,29.0,267.75,-134.12,893.73,29.0,29.0,270.0,-127.49,893.91,29.0,29.0,272.25,-120.71,894.34,29.0,29.0,274.5,-114.01,895.12,29.0,29.0,276.75,-107.34,896.25,29.0,29.0,279.0,-100.67,897.65,29.0,29.0,281.25,-93.95,899.33,29.0,29.0,283.5,-87.27,901.34,29.0,29.0,285.75,-80.52,903.62,29.0,29.0,288.0,-73.82,906.2,29.0,29.0,290.25,-67.19,909.25,29.0,29.0,292.5,-60.43,912.47,29.0,29.0,294.75,-53.79,916.05,29.0,29.0,297.0,-46.97,919.88,29.0,29.0,299.25,-40.34,924.02,29.0,29.0,301.5,-33.63,928.54,29.0,29.0,303.75,-26.89,933.34,29.0,29.0,306.0,-20.22,938.44,29.0,29.0,308.25,-13.54,943.88,29.0,29.0,310.5,-6.82,949.57,29.0,29.0,312.75,-0.15,955.64,29.0,29.0,315.0,6.59,961.95,29.0,29.0,317.25,13.29,968.53,29.0,29.0,319.5,19.98,975.57,29.0,29.0,321.75,26.62,982.86,29.0,29.0,324.0,33.43,990.39,29.0,29.0,326.25,40.11,998.3,29.0,29.0,328.5,46.76,1006.44,29.0,29.0,330.75,53.5,1014.94,29.0,29.0,333.0,60.18,1023.73,29.0,29.0,335.25,66.82,1032.91,29.0,29.0,337.5,73.54,1042.39,29.0,29.0,339.75,80.32,1052.11,29.0,29.0,342.0,86.94,1062.13,29.0,29.0,344.25,93.71,1072.48,29.0,29.0,346.5,100.41,1083.15,29.0,29.0,348.75,107.07,1094.14,29.0,29.0,351.0,113.77,1105.49,29.0,29.0,353.25,120.48,1117.07,29.0,29.0,355.5,127.17,1128.97,29.0,29.0,357.75,134.42,1140.32,29.0,29.0,360.0,134.04,1129.97,29.0,29.0,362.25,134.66,1118.92,29.0,29.0,364.5,136.07,1108.11,29.0,29.0,366.75,138.57,1097.41,29.0,29.0,369.0,142.56,1086.83,29.0,29.0,371.25,148.03,1076.36,29.0,29.0,373.5,155.05,1065.95,29.0,29.0,375.75,163.71,1055.61,29.0,29.0,378.0,173.75,1045.31,29.0,29.0,380.25,185.04,1035.31,29.0,29.0,382.5,197.26,1025.35,29.0,29.0,384.75,210.04,1015.72,29.0,29.0,387.0,222.99,1006.24,29.0,29.0,389.25,235.87,997.13,29.0,29.0,391.5,248.2,988.39,29.0,29.0,393.75,259.72,980.12,29.0,29.0,396.0,270.23,972.33,29.0,29.0,398.25,279.37,964.91,29.0,29.0,400.5,287.14,958.16,29.0,29.0,402.75,293.51,951.79,29.0,29.0,405.0,298.44,946.05,29.0,29.0,407.25,302.19,940.77,29.0,29.0,409.5,304.89,935.92,29.0,29.0,411.75,306.62,931.55,29.0,29.0,414.0,307.83,927.57,29.0,29.0,416.25,308.72,923.9,29.0,29.0,418.5,309.58,920.64,29.0,29.0,420.75,310.69,917.55,29.0,29.0,423.0,312.45,914.74,29.0,29.0,425.25,314.91,912.16,29.0,29.0,427.5,318.3,909.73,29.0,29.0,429.75,322.68,907.39,29.0,29.0,432.0,328.19,905.36,29.0,29.0,434.25,334.91,903.3,29.0,29.0,436.5,342.6,901.42,29.0,29.0,438.75,351.42,899.7,29.0,29.0,441.0,361.12,898.2,29.0,29.0,443.25,371.65,896.85,29.0,29.0,445.5,382.74,895.77,29.0,29.0,447.75,394.32,894.89,29.0,29.0,450.0,406.1,894.37,29.0,29.0,452.25,417.96,893.99,29.0,29.0,454.5,429.67,894.03,29.0,29.0,456.75,441.14,894.32,29.0,29.0,459.0,452.19,895.13,29.0,29.0,461.25,462.69,896.28,29.0,29.0,463.5,472.59,897.78,29.0,29.0,465.75,481.79,899.78,29.0,29.0,468.0,490.32,902.11,29.0,29.0,470.25,498.15,904.89,29.0,29.0,472.5,505.15,908.1,29.0,29.0,474.75,511.55,911.69,29.0,29.0,477.0,517.21,915.73,29.0,29.0,479.25,522.28,920.17,29.0,29.0,481.5,526.86,924.93,29.0,29.0,483.75,530.83,930.16,29.0,29.0,486.0,534.51,935.75,29.0,29.0,488.25,537.91,941.61,29.0,29.0,490.5,541.06,947.89,29.0,29.0,492.75,543.98,954.48,29.0,29.0,495.0,546.81,961.44,29.0,29.0,497.25,549.63,968.7,29.0,29.0,499.5,552.38,976.22,29.0,29.0,501.75,555.25,984.06,29.0,29.0,504.0,558.23,992.23,29.0,29.0,506.25,561.34,1000.61,29.0,29.0,508.5,564.55,1009.34,29.0,29.0,510.75,568.04,1018.33,29.0,29.0,513.0,571.64,1027.56,29.0,29.0,515.25,575.5,1037.18,29.0,29.0,517.5,579.5,1046.88,29.0,29.0,519.75,583.71,1056.95,29.0,29.0,522.0,588.09,1067.35,29.0,29.0,524.25,592.67,1078.02,29.0,29.0,526.5,597.39,1088.89,29.0,29.0,528.75,602.29,1100.08,29.0,29.0,531.0,607.23,1111.54,29.0,29.0,533.25,612.36,1123.3,29.0,29.0,535.5,617.65,1135.35,29.0,29.0,537.75,621.61,1149.03,29.0,29.0,540.0,625.57,1162.87,29.0,29.0,542.25,629.53,1177.01,29.0,29.0,544.5,633.49,1191.47,29.0,29.0,546.75,652.7,1187.61,29.0,29.0,552.37,673.56,1182.04,29.0,29.0,558.37,694.42,1176.77,29.0,29.0,564.37,715.27,1171.81,29.0,29.0,570.37,727.14,1155.85,29.0,29.0,576.37,734.87,1135.04,29.0,29.0,582.37,742.6,1114.54,29.0,29.0,588.37,750.33,1094.35,29.0,29.0,594.37,758.06,1074.47,29.0,29.0,600.37,765.79,1054.9,29.0,29.0,606.37,773.52,1035.63,29.0,29.0,612.37,781.24,1016.68,29.0,29.0,618.37,788.97,998.04,29.0,29.0,624.37,796.7,979.7,29.0,29.0,630.37,804.43,961.68,29.0,29.0,636.37,812.16,943.96,29.0,29.0,642.37,819.89,926.56,29.0,29.0,648.37,827.62,909.46,29.0,29.0,654.37,835.35,892.67,29.0,29.0,660.37,843.08,876.19,29.0,29.0,666.37,850.8,860.03,29.0,29.0,672.37,858.53,844.17,29.0,29.0,678.37,866.26,828.62,29.0,29.0,684.37,871.77,828.4,29.0,29.0,690.37,876.99,830.51,29.0,29.0,696.37,882.21,832.92,29.0,29.0,702.37,887.43,835.64,29.0,29.0,708.37,892.64,838.67,29.0,29.0,714.37,897.86,842.01,29.0,29.0,720.37,903.08,845.66,29.0,29.0,726.37,908.3,849.62,29.0,29.0,732.37,913.52,853.89,29.0,29.0,738.37,918.74,858.47,29.0,29.0,744.37,923.95,863.36,29.0,29.0,750.37,929.17,868.55,29.0,29.0,756.37,934.39,874.06,29.0,29.0,762.37,939.61,879.87,29.0,29.0,768.37,944.83,886.0,29.0,29.0,774.37,950.05,892.43,29.0,29.0,780.37,955.26,899.18,29.0,29.0,786.37,960.48,906.23,29.0,29.0,792.37,965.7,913.59,29.0,29.0,798.37,970.92,921.26,29.0,29.0,804.37,976.14,929.25,29.0,29.0,810.37,981.35,937.54,29.0,29.0,816.37,986.57,946.14,29.0,29.0,822.37,991.79,955.05,29.0,29.0,828.37,997.01,964.26,29.0,29.0,834.37,1002.23,973.79,29.0,29.0,840.37,1007.45,983.63,29.0,29.0,846.37,1012.66,993.78,29.0,29.0,852.37,1017.88,1004.23,29.0,29.0,858.37,1023.1,1015.0,29.0,29.0,864.37,1028.32,1026.07,29.0,29.0,870.37,1033.54,1037.46,29.0,29.0,876.37,1038.75,1049.15,29.0,29.0,882.37,1042.97,1051.53,29.0,29.0,888.37,1047.05,1052.94,29.0,29.0,894.37,1051.13,1054.67,29.0,29.0,900.37,1055.21,1056.7,29.0,29.0,906.37,1059.29,1059.04,29.0,29.0,912.37,1063.37,1061.69,29.0,29.0,918.37,1067.45,1064.65,29.0,29.0,924.37,1071.53,1067.92,29.0,29.0,930.37,1075.61,1071.5,29.0,29.0,936.37,1079.69,1075.39,29.0,29.0,942.37,1083.77,1079.59,29.0,29.0,948.37,1087.85,1084.1,29.0,29.0,954.37,1091.93,1088.91,29.0,29.0,960.37,1096.01,1094.04,29.0,29.0,966.37,1100.09,1099.48,29.0,29.0,972.37,1104.17,1105.22,29.0,29.0,978.37,1108.26,1111.27,29.0,29.0,984.37,1112.34,1117.64,29.0,29.0,990.37,1116.42,1124.31,29.0,29.0,996.37,1120.5,1131.29,29.0,29.0,1002.37,1124.58,1138.59,29.0,29.0,1008.37,1128.66,1146.19,29.0,29.0,1014.37,1132.74,1154.1,29.0,29.0,1020.37,1136.82,1162.32,29.0,29.0,1026.37,1140.9,1170.85,29.0,29.0,1032.37,1144.98,1179.69,29.0,29.0,1038.37,1151.37,1186.33,29.0,29.0,1044.37,1162.41,1188.15,29.0,29.0,1050.37,1173.45,1190.28,29.0,29.0,1056.37,1184.48,1192.72,29.0,29.0,1062.37,1195.52,1195.47,29.0,29.0,1068.37,1206.56,1198.53,29.0,29.0,1074.37,1217.6,1201.9,29.0,29.0,1080.37,1228.64,1205.58,29.0,29.0,1086.37,1239.68,1209.56,29.0,29.0,1092.37,1250.71,1213.86,29.0,29.0,1098.37,1261.75,1218.46,29.0,29.0,1104.37,1272.79,1223.38,29.0,29.0,1110.37,1283.83,1228.6,29.0,29.0,1116.37,1294.95,1233.79,29.0,29.0,1122.37,1308.61,1216.34,29.0,29.0,1127.06,1322.01,1199.34,29.0,29.0,1131.73,1335.15,1182.8,29.0,29.0,1136.4,1348.05,1166.69,29.0,29.0,1141.06,1360.72,1150.99,29.0,29.0,1145.7,1373.16,1135.7,29.0,29.0,1150.34,1385.39,1120.81,29.0,29.0,1154.97,1397.4,1106.29,29.0,29.0,1159.59,1409.22,1092.14,29.0,29.0,1164.2,1420.85,1078.35,29.0,29.0,1168.8,1432.29,1064.9,29.0,29.0,1173.39,1443.55,1051.79,29.0,29.0,1177.97,1454.63,1039.01,29.0,29.0,1182.54,1465.56,1026.55,29.0,29.0,1187.1,1476.32,1014.4,29.0,29.0,1191.65,1486.92,1002.55,29.0,29.0,1196.2,1497.38,990.99,29.0,29.0,1200.73,1507.69,979.72,29.0,29.0,1205.25,1517.86,968.73,29.0,29.0,1209.77,1527.89,958.01,29.0,29.0,1214.27,1537.8,947.56,29.0,29.0,1218.77,1547.58,937.37,29.0,29.0,1223.26,1557.23,927.43,29.0,29.0,1227.73,1566.77,917.74,29.0,29.0,1232.2,1576.2,908.3,29.0,29.0,1236.66,1585.51,899.09,29.0,29.0,1241.11,1594.72,890.11,29.0,29.0,1245.55,1603.82,881.36,29.0,29.0,1249.98,1612.83,872.83,29.0,29.0,1254.4,1621.73,864.52,29.0,29.0,1258.82,1630.54,856.43,29.0,29.0,1263.22,1639.26,848.55,29.0,29.0,1267.62,1647.9,840.87,29.0,29.0,1272.0,1656.44,833.4,29.0,29.0,1276.38,1664.91,826.13,29.0,29.0,1280.75,1673.29,819.05,29.0,29.0,1285.11,1681.6,812.17,29.0,29.0,1289.46,1689.82,805.47,29.0,29.0,1293.8,1697.98,798.97,29.0,29.0,1298.13,1706.06,792.64,29.0,29.0,1302.45,1714.08,786.5,29.0,29.0,1306.76,1722.02,780.54,29.0,29.0,1311.07,1729.91,774.75,29.0,29.0,1315.36,1737.72,769.13,29.0,29.0,1319.65,1745.48,763.69,29.0,29.0,1323.93,1753.17,758.42,29.0,29.0,1328.2,1760.81,753.31,29.0,29.0,1332.46,1768.39,748.37,29.0,29.0,1336.71,1775.92,743.59,29.0,29.0,1340.96,1783.39,738.98,29.0,29.0,1345.19,1790.81,734.52,29.0,29.0,1349.41,1798.18,730.22,29.0,29.0,1353.63,1805.5,726.07,29.0,29.0,1357.84,1812.77,722.08,29.0,29.0,1362.04,1819.99,718.24,29.0,29.0,1366.23,1827.17,714.56,29.0,29.0,1370.41,1834.31,711.02,29.0,29.0,1374.58,1841.4,707.63,29.0,29.0,1378.75,1848.45,704.39,29.0,29.0,1382.91,1855.46,701.29,29.0,29.0,1387.05,1862.43,698.34,29.0,29.0,1391.19,1869.36,695.54,29.0,29.0,1395.32,1876.25,692.87,29.0,29.0,1399.44,1883.11,690.35,29.0,29.0,1403.56,1889.93,687.96,29.0,29.0,1407.66,1896.72,685.72,29.0,29.0,1411.76,1903.47,683.61,29.0,29.0,1415.85,1910.19,681.65,29.0,29.0,1419.93,1916.88,679.81,29.0,29.0,1424.0,1923.53,678.12,29.0,29.0,1428.06,1930.15,676.56,29.0,29.0,1432.11,1936.75,675.13,29.0,29.0,1436.16,1943.31,673.84,29.0,29.0,1440.2,1949.85,672.68,29.0,29.0,1444.23,1956.36,671.65,29.0,29.0,1448.25,1962.84,670.75,29.0,29.0,1452.26,1969.3,669.99,29.0,29.0,1456.26,1975.73,669.35,29.0,29.0,1460.26,1982.13,668.84,29.0,29.0,1464.25,1988.51,668.47,29.0,29.0,1468.23,1994.87,668.22,29.0,29.0,1472.2,2001.2,668.1,29.0,29.0,1476.16,2007.52,668.11,29.0,29.0,1480.12,2013.8,668.24,29.0,29.0,1484.06,2020.07,668.5,29.0,29.0,1488.0,2026.32,668.89,29.0,29.0,1491.93,2032.54,669.4,29.0,29.0,1495.85,2038.75,670.04,29.0,29.0,1499.77,2044.93,670.81,29.0,29.0,1503.67,2051.1,671.7,29.0,29.0,1507.57,2057.25,672.71,29.0,29.0,1511.46,2063.37,673.85,29.0,29.0,1515.34,2069.49,675.11,29.0,29.0,1519.22,2075.58,676.5,29.0,29.0,1523.08,2081.66,678.01,29.0,29.0,1526.94,2087.72,679.64,29.0,29.0,1530.79,2093.76,681.39,29.0,29.0,1534.63,2099.79,683.27,29.0,29.0,1538.47,2105.8,685.27,29.0,29.0,1542.29,2111.8,687.39,29.0,29.0,1546.11,2117.78,689.64,29.0,29.0,1549.92,2123.75,692.0,29.0,29.0,1553.72,2129.7,694.49,29.0,29.0,1557.52,2135.64,697.1,29.0,29.0,1561.3,2141.57,699.83,29.0,29.0,1565.08,2147.48,702.69,29.0,29.0,1568.85,2153.38,705.66,29.0,29.0,1572.62,2159.27,708.75,29.0,29.0,1576.37,2165.15,711.97,29.0,29.0,1580.12,2171.01,715.3,29.0,29.0,1583.86,2176.86,718.76,29.0,29.0,1587.59,2182.7,722.34,29.0,29.0,1591.32,2188.53,726.04,29.0,29.0,1595.03,2194.35,729.85,29.0,29.0,1598.74,2200.16,733.79,29.0,29.0,1602.44,2205.95,737.85,29.0,29.0,1606.14,2211.74,742.03,29.0,29.0,1609.82,2217.52,746.33,29.0,29.0,1613.5,2223.28,750.75,29.0,29.0,1617.17,2229.04,755.28,29.0,29.0,1620.84,2234.79,759.94,29.0,29.0,1624.49,2240.53,764.72,29.0,29.0,1628.14,2246.26,769.62,29.0,29.0,1631.78,2251.98,774.64,29.0,29.0,1635.41,2257.69,779.78,29.0,29.0,1639.04,2263.39,785.03,29.0,29.0,1642.66,2269.09,790.41,29.0,29.0,1646.27,2274.78,795.91,29.0,29.0,1649.87,2280.46,801.53,29.0,29.0,1653.47,2286.13,807.26,29.0,29.0,1657.06,2291.79,813.12,29.0,29.0,1660.64,2297.45,819.1,29.0,29.0,1664.21,2303.1,825.19,29.0,29.0,1667.78,2308.75,831.41,29.0,29.0,1671.34,2314.38,837.75,29.0,29.0,1674.89,2320.01,844.2,29.0,29.0,1678.43,2325.63,850.78,29.0,29.0,1681.97,2331.25,857.47,29.0,29.0,1685.5,2336.86,864.29,29.0,29.0,1689.02,2342.47,871.22,29.0,29.0,1692.53,2348.06,878.28,29.0,29.0,1696.04,2353.66,885.45,29.0,29.0,1699.54,2359.24,892.75,29.0,29.0,1703.04,2364.82,900.16,29.0,29.0,1706.52,2370.4,907.7,29.0,29.0,1710.0]},"A":{"f0":101.0,"d":[2370.7,908.1,29.0,29.0,1440.0,2362.65,895.3,29.0,29.0,1439.92,2354.97,883.11,29.0,29.0,1439.68,2347.35,871.15,29.0,29.0,1439.29,2339.81,859.4,29.0,29.0,1438.75,2332.32,847.88,29.0,29.0,1438.05,2324.91,836.57,29.0,29.0,1437.21,2317.56,825.48,29.0,29.0,1436.23,2310.28,814.61,29.0,29.0,1435.1,2303.07,803.95,29.0,29.0,1433.84,2295.93,793.52,29.0,29.0,1432.44,2288.85,783.3,29.0,29.0,1430.9,2281.84,773.31,29.0,29.0,1429.24,2274.89,763.53,29.0,29.0,1427.45,2268.02,753.97,29.0,29.0,1425.53,2261.21,744.63,29.0,29.0,1423.5,2254.46,735.51,29.0,29.0,1421.34,2247.79,726.61,29.0,29.0,1419.07,2241.18,717.92,29.0,29.0,1416.69,2234.64,709.46,29.0,29.0,1414.19,2228.16,701.21,29.0,29.0,1411.59,2221.76,693.19,29.0,29.0,1408.88,2215.42,685.38,29.0,29.0,1406.07,2209.14,677.79,29.0,29.0,1403.15,2202.94,670.42,29.0,29.0,1400.15,2196.8,663.26,29.0,29.0,1397.04,2190.73,656.33,29.0,29.0,1393.85,2184.72,649.61,29.0,29.0,1390.57,2178.78,643.12,29.0,29.0,1387.2,2172.91,636.84,29.0,29.0,1383.75,2167.11,630.78,29.0,29.0,1380.22,2161.37,624.94,29.0,29.0,1376.61,2155.7,619.32,29.0,29.0,1372.93,2150.1,613.92,29.0,29.0,1369.17,2144.57,608.73,29.0,29.0,1365.35,2139.1,603.77,29.0,29.0,1361.46,2133.7,599.02,29.0,29.0,1357.5,2128.36,594.5,29.0,29.0,1353.49,2123.1,590.19,29.0,29.0,1349.41,2117.9,586.1,29.0,29.0,1345.28,2112.76,582.23,29.0,29.0,1341.1,2107.7,578.57,29.0,29.0,1336.87,2102.7,575.14,29.0,29.0,1332.59,2097.77,571.92,29.0,29.0,1328.27,2092.9,568.93,29.0,29.0,1323.91,2088.11,566.15,29.0,29.0,1319.5,2083.38,563.59,29.0,29.0,1315.06,2078.71,561.25,29.0,29.0,1310.59,2074.12,559.13,29.0,29.0,1306.09,2069.59,557.23,29.0,29.0,1301.56,2065.13,555.54,29.0,29.0,1297.01,2060.73,554.08,29.0,29.0,1292.43,2056.41,552.83,29.0,29.0,1287.83,2052.15,551.81,29.0,29.0,1283.22,2047.95,551.0,29.0,29.0,1278.59,2043.83,550.41,29.0,29.0,1273.95,2039.77,550.04,29.0,29.0,1269.31,2035.77,549.88,29.0,29.0,1264.65,2031.85,549.95,29.0,29.0,1260.0,2027.99,550.23,29.0,29.0,1255.35,2024.2,550.74,29.0,29.0,1250.69,2020.48,551.46,29.0,29.0,1246.05,2016.82,552.4,29.0,29.0,1241.41,2013.23,553.56,29.0,29.0,1236.78,2009.71,554.94,29.0,29.0,1232.17,2006.25,556.54,29.0,29.0,1227.57,2002.87,558.35,29.0,29.0,1222.99,1999.54,560.39,29.0,29.0,1218.44,1996.29,562.64,29.0,29.0,1213.91,1993.1,565.12,29.0,29.0,1209.41,1989.98,567.81,29.0,29.0,1204.94,1986.93,570.72,29.0,29.0,1200.5,1983.95,573.85,29.0,29.0,1196.09,1981.03,577.19,29.0,29.0,1191.73,1978.18,580.76,29.0,29.0,1187.41,1975.39,584.54,29.0,29.0,1183.13,1972.67,588.55,29.0,29.0,1178.9,1970.02,592.77,29.0,29.0,1174.72,1967.44,597.21,29.0,29.0,1170.59,1964.92,601.87,29.0,29.0,1166.51,1962.48,606.75,29.0,29.0,1162.5,1960.09,611.85,29.0,29.0,1158.54,1957.78,617.16,29.0,29.0,1154.65,1955.53,622.7,29.0,29.0,1150.83,1953.35,628.45,29.0,29.0,1147.07,1951.24,634.43,29.0,29.0,1143.39,1949.19,640.62,29.0,29.0,1139.78,1947.21,647.03,29.0,29.0,1136.25,1945.3,653.66,29.0,29.0,1132.8,1943.46,660.5,29.0,29.0,1129.43,1941.68,667.57,29.0,29.0,1126.15,1939.97,674.85,29.0,29.0,1122.96,1938.32,682.36,29.0,29.0,1119.85,1936.75,690.08,29.0,29.0,1116.85,1935.24,698.02,29.0,29.0,1113.93,1933.79,706.18,29.0,29.0,1111.12,1932.42,714.56,29.0,29.0,1108.41,1931.11,723.16,29.0,29.0,1105.81,1929.87,731.97,29.0,29.0,1103.31,1928.69,741.01,29.0,29.0,1100.93,1927.59,750.26,29.0,29.0,1098.66,1926.55,759.74,29.0,29.0,1096.5,1925.58,769.43,29.0,29.0,1094.47,1924.67,779.34,29.0,29.0,1092.55,1923.83,789.47,29.0,29.0,1090.76,1923.06,799.81,29.0,29.0,1089.1,1922.35,810.38,29.0,29.0,1087.56,1921.72,821.16,29.0,29.0,1086.16,1921.15,832.17,29.0,29.0,1084.9,1920.64,843.39,29.0,29.0,1083.77,1920.21,854.83,29.0,29.0,1082.79,1919.84,866.49,29.0,29.0,1081.95,1919.54,878.37,29.0,29.0,1081.25,1919.3,890.47,29.0,29.0,1080.71,1919.13,902.78,29.0,29.0,1080.32,1919.03,915.32,28.78,29.22,1080.08,1919.0,928.07,28.18,29.85,1080.0,1919.0,941.05,27.26,30.85,1080.0,1919.0,954.24,26.13,32.19,1080.0,1919.0,967.65,24.87,33.82,1080.0,1919.0,981.28,23.55,35.72,1080.0,1919.0,995.12,22.23,37.84,1080.0,1919.0,1009.19,20.95,40.15,1080.0,1919.0,1023.47,19.74,42.61,1080.0,1919.0,1037.98,18.62,45.17,1080.0,1919.0,1052.7,17.59,47.82,1080.0,1919.0,1067.64,16.65,50.5,1080.0,1919.0,1082.8,15.81,53.18,1080.0,1919.0,1098.18,15.06,55.83,1080.0,1919.0,1113.78,14.4,58.39,1080.0,1919.0,1129.59,13.82,60.85,1080.0,1919.0,1145.63,13.32,63.16,1080.0,1919.0,1161.88,12.88,65.28,1080.0,1919.0,1178.36,12.52,67.18,1080.0,1919.0,1195.05,12.22,68.81,1080.0,1919.0,1211.96,11.99,70.15,1080.0,1919.0,1229.09,11.82,71.15,1080.0,1919.0,1246.43,11.72,71.78,1080.0,1919.0,1264.0,11.68,72.0,1080.0,1919.0,1269.47,16.15,61.06,1080.0,1919.0,1280.91,24.83,38.19,1080.0,1919.0,1290.85,32.37,18.3,1080.0,1919.0,1293.0,34.0,14.0,1080.0,1919.0,1293.0,34.0,14.0,1080.0,1919.0,1293.0,34.0,14.0,1080.0,1919.0,1293.0,34.0,14.0,1080.0,1919.0,1293.0,34.0,14.0,1080.0,1919.0,1292.52,33.65,14.96,1080.0,1919.0,1291.09,32.67,17.83,1080.0,1919.0,1288.67,31.17,22.65,1080.0,1919.0,1285.21,29.24,29.57,1080.0,1919.0,1280.64,27.0,38.71,1080.0,1919.0,1274.91,24.55,50.19,1080.0,1919.0,1267.99,22.0,64.03,1080.0,1919.0,1259.97,19.45,80.07,1080.0,1919.0,1250.99,17.0,98.02,1080.0,1918.92,1240.97,14.76,116.3,1080.0,1918.91,1229.06,12.83,131.83,1080.0,1918.91,1216.96,11.33,146.15,1080.0,1918.9,1205.59,10.35,158.36,1080.0,1918.9,1195.9,10.0,167.3,1080.0,1918.9,1187.4,10.0,174.4,1080.0,1918.9,1178.7,10.0,181.3,1080.0,1918.9,1169.9,10.0,187.7,1080.0,1918.9,1161.2,10.0,193.1,1080.0,1918.9,1152.5,10.0,197.2,1080.0,1918.9,1143.9,10.0,200.3,1080.0,1918.9,1135.4,10.0,202.8,1080.0,1918.9,1127.1,10.0,205.2,1080.0,1918.9,1119.0,10.0,207.9,1080.0,1918.9,1111.2,10.0,210.8,1080.0,1918.9,1103.8,10.0,213.9,1080.0,1918.9,1096.7,10.0,217.0,1080.0,1918.9,1090.1,10.0,220.1,1080.0,1918.9,1084.0,10.0,223.1,1080.0,1918.9,1078.4,10.0,225.8,1080.0,1918.9,1073.4,10.0,228.3,1080.0,1918.9,1069.0,10.0,230.5,1080.0,1918.9,1065.2,10.0,232.3,1080.0,1918.9,1062.1,10.0,233.9,1080.0,1918.9,1059.4,10.0,235.2,1080.0,1919.0,1057.3,10.0,236.3,1080.0,1919.0,1055.7,10.0,237.1,1080.0,1919.0,1054.5,10.0,237.7,1080.0,1919.0,1053.8,10.0,238.2,1080.0,1919.0,1053.5,10.0,238.5,1080.0,1919.0,1053.6,10.0,238.7,1080.0,1919.1,1054.1,10.0,238.8,1080.0,1919.1,1054.8,10.0,238.9,1080.0,1919.1,1055.9,10.0,238.9,1080.0,1919.1,1057.3,10.0,238.8,1080.0,1919.2,1058.9,10.0,238.8,1080.0,1919.2,1060.7,10.0,238.7,1080.0,1919.2,1062.8,10.0,238.7,1080.0,1919.3,1065.0,10.0,238.8,1080.0,1919.3,1067.3,10.0,239.0,1080.0,1919.3,1069.7,10.0,239.2,1080.0,1919.4,1072.2,10.0,239.7,1080.0,1919.4,1074.8,10.0,240.3,1080.0,1919.5,1077.4,10.0,241.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0,1919.5,1080.0,10.0,242.0,1080.0]},"B":{"f0":101.0,"d":[2370.7,908.1,29.0,29.0,1440.0,2373.29,905.28,29.0,29.0,1440.0,2375.86,902.44,29.0,29.0,1440.03,2378.42,899.66,29.0,29.0,1440.12,2380.95,896.86,29.0,29.0,1440.27,2383.58,894.13,29.0,29.0,1440.52,2386.19,891.47,29.0,29.0,1440.89,2388.68,888.8,29.0,29.0,1441.39,2391.27,886.21,29.0,29.0,1442.04,2393.84,883.7,29.0,29.0,1442.85,2396.41,881.28,29.0,29.0,1443.85,2398.97,878.84,29.0,29.0,1445.04,2401.52,876.6,29.0,29.0,1446.44,2404.17,874.34,29.0,29.0,1448.06,2406.72,872.08,29.0,29.0,1449.9,2409.26,870.02,29.0,29.0,1451.98,2411.8,868.05,29.0,29.0,1454.29,2414.34,866.08,29.0,29.0,1456.85,2416.88,864.22,29.0,29.0,1459.67,2419.43,862.46,29.0,29.0,1462.74,2421.88,860.8,29.0,29.0,1466.06,2424.43,859.26,29.0,29.0,1469.65,2426.89,857.82,29.0,29.0,1473.5,2429.46,856.5,29.0,29.0,1477.6,2431.93,855.29,29.0,29.0,1481.96,2434.32,854.2,29.0,29.0,1486.58,2436.81,853.23,29.0,29.0,1491.45,2439.22,852.37,29.0,29.0,1496.58,2441.75,851.64,29.0,29.0,1501.94,2444.08,851.04,29.0,29.0,1507.55,2446.54,850.56,29.0,29.0,1513.39,2448.91,850.22,29.0,29.0,1519.45,2451.3,850.0,29.0,29.0,1525.74,2453.6,850.0,29.0,29.0,1532.23,2455.9,850.0,29.0,29.0,1538.93,2458.2,850.2,29.0,29.0,1545.83,2460.5,850.5,29.0,29.0,1552.9,2462.6,850.9,29.0,29.0,1560.16,2464.8,851.5,29.0,29.0,1567.57,2466.9,852.1,29.0,29.0,1575.14,2468.9,852.9,29.0,29.0,1582.85,2470.9,853.8,29.0,29.0,1590.69,2472.9,854.9,29.0,29.0,1598.64,2474.7,856.1,29.0,29.0,1606.7,2476.6,857.4,29.0,29.0,1614.86,2478.4,858.8,29.0,29.0,1623.09,2480.1,860.4,29.0,29.0,1631.39,2481.7,862.1,29.0,29.0,1639.75,2483.3,864.0,29.0,29.0,1648.14,2484.8,866.0,29.0,29.0,1656.56,2486.3,868.1,29.0,29.0,1665.0,2487.7,870.4,29.0,29.0,1673.44,2489.0,872.8,29.0,29.0,1681.86,2490.2,875.4,29.0,29.0,1690.25,2491.4,878.1,29.0,29.0,1698.61,2492.5,881.0,29.0,29.0,1706.91,2493.5,884.0,29.0,29.0,1715.14,2494.4,887.1,29.0,29.0,1723.3,2495.3,890.3,29.0,29.0,1731.36,2496.0,893.7,29.0,29.0,1739.31,2496.7,897.2,29.0,29.0,1747.15,2497.3,900.8,29.0,29.0,1754.86,2497.8,904.4,29.0,29.0,1762.43,2498.2,908.2,29.0,29.0,1769.84,2498.5,912.1,29.0,29.0,1777.1,2498.8,916.1,29.0,29.0,1784.17,2498.9,920.2,29.0,29.0,1791.07,2498.9,924.3,29.0,29.0,1797.77,2498.8,928.5,29.0,29.0,1804.26,2498.6,932.8,29.0,29.0,1810.55,2498.4,937.2,29.0,29.0,1816.61,2498.0,941.6,29.0,29.0,1822.45,2497.5,946.0,29.0,29.0,1828.06,2496.9,950.6,29.0,29.0,1833.42,2496.1,955.1,29.0,29.0,1838.55,2495.3,959.8,29.0,29.0,1843.42,2494.4,964.4,29.0,29.0,1848.04,2493.3,969.1,29.0,29.0,1852.4,2492.1,973.8,29.0,29.0,1856.5,2490.8,978.5,29.0,29.0,1860.35,2489.4,983.3,29.0,29.0,1863.94,2487.8,988.1,29.0,29.0,1867.26,2486.1,992.9,29.0,29.0,1870.33,2484.3,997.6,29.0,29.0,1873.15,2482.4,1002.4,29.0,29.0,1875.71,2480.3,1007.2,29.0,29.0,1878.02,2478.1,1012.0,29.0,29.0,1880.1,2475.7,1016.7,29.0,29.0,1881.94,2473.2,1021.5,29.0,29.0,1883.56,2470.6,1026.2,29.0,29.0,1884.96,2467.9,1030.8,29.0,29.0,1886.15,2464.9,1035.5,29.0,29.0,1887.15,2461.9,1040.1,29.0,29.0,1887.96,2458.7,1044.7,29.0,29.0,1888.61,2455.3,1049.2,29.0,29.0,1889.11,2451.8,1053.7,29.0,29.0,1889.48,2448.2,1058.1,29.0,29.0,1889.73,2444.4,1062.4,29.0,29.0,1889.88,2440.4,1066.7,29.0,29.0,1889.97,2436.3,1070.9,29.0,29.0,1890.0,2432.0,1075.0,29.0,29.0,1890.0,2428.2,1076.0,27.3,28.3,1890.0,2424.5,1077.0,25.5,27.5,1890.0,2420.7,1078.0,23.8,26.8,1890.0,2417.0,1079.0,22.0,26.0,1889.99,2413.5,1079.0,21.5,25.5,1890.54,2409.9,1079.0,20.9,25.4,1891.03,2406.1,1079.0,20.4,25.9,1891.47,2402.3,1079.0,19.9,26.7,1891.87,2398.3,1079.0,19.4,27.9,1892.22,2394.3,1079.0,18.9,29.5,1892.53,2390.3,1079.0,18.5,31.4,1892.79,2386.2,1079.0,18.0,33.5,1893.01,2382.1,1079.1,17.6,36.0,1893.2,2378.0,1079.1,17.1,38.6,1893.34,2373.9,1079.1,16.7,41.4,1893.45,2369.8,1079.1,16.3,44.3,1893.53,2365.8,1079.1,15.9,47.4,1893.57,2361.8,1079.1,15.5,50.5,1893.58,2357.9,1079.1,15.2,53.6,1893.56,2354.1,1079.1,14.8,56.8,1893.51,2350.5,1079.1,14.5,59.9,1893.43,2346.9,1079.1,14.1,63.0,1893.33,2343.5,1079.1,13.8,65.9,1893.21,2340.2,1079.1,13.5,68.8,1893.06,2337.1,1079.1,13.2,71.4,1892.89,2334.2,1079.0,12.9,73.9,1892.7,2331.5,1079.0,12.6,76.1,1892.5,2329.0,1079.0,12.4,78.0,1892.27,2326.8,1079.0,12.1,79.6,1892.04,2324.7,1079.0,11.9,81.0,1891.79,2322.9,1079.0,11.7,82.1,1891.53,2321.3,1079.0,11.4,82.9,1891.26,2319.8,1079.0,11.2,83.6,1890.98,2318.5,1079.0,11.0,84.1,1890.69,2317.4,1079.0,10.9,84.4,1890.4,2316.3,1079.0,10.7,84.6,1890.11,2315.4,1079.0,10.5,84.7,1889.81,2314.6,1079.0,10.4,84.8,1889.52,2313.8,1079.0,10.2,84.8,1889.22,2313.1,1079.0,10.1,84.7,1888.93,2312.5,1079.0,10.0,84.7,1888.64,2311.9,1079.0,9.9,84.8,1888.35,2311.5,1079.0,9.8,84.9,1888.08,2311.2,1079.0,9.7,85.1,1887.81,2311.0,1079.0,9.6,85.4,1887.55,2311.0,1079.0,9.5,85.8,1887.31,2311.3,1079.0,9.5,86.5,1887.08,2311.8,1079.0,9.4,87.3,1886.86,2312.5,1079.0,9.4,88.3,1886.66,2313.6,1079.0,9.4,89.6,1886.48,2315.0,1078.9,9.3,91.2,1886.32,2316.7,1078.9,9.3,93.1,1886.18,2318.8,1078.9,9.3,95.3,1886.06,2321.3,1078.9,9.4,97.7,1885.97,2324.1,1078.9,9.4,100.3,1885.9,2327.2,1078.9,9.4,102.8,1885.86,2330.6,1078.9,9.5,105.3,1885.85,2334.2,1078.9,9.5,107.6,1885.87,2338.0,1078.9,9.6,109.5,1885.92,2342.1,1078.9,9.6,111.0,1886.01,2346.3,1078.9,9.7,112.1,1886.13,2350.6,1078.9,9.8,112.4,1886.28,2355.0,1078.9,9.9,112.1,1886.48,2359.6,1078.9,10.0,110.9,1886.72,2364.2,1078.9,10.2,108.8,1886.99,2368.8,1078.9,10.3,105.9,1887.32,2373.4,1078.9,10.4,102.2,1887.68,2378.0,1078.9,10.6,97.8,1888.09,2382.5,1078.9,10.7,92.9,1888.55,2386.9,1079.0,10.9,87.5,1889.06,2391.3,1079.0,11.1,81.8,1889.62,2395.5,1079.0,11.2,75.9,1890.23,2399.5,1079.0,11.4,69.8,1890.9,2403.4,1079.0,11.6,63.6,1891.62,2407.0,1079.0,11.9,57.5,1892.4,2410.4,1079.0,12.1,51.5,1893.24,2413.5,1079.0,12.3,45.8,1894.14,2416.4,1079.0,12.5,40.4,1895.1,2418.9,1079.0,12.8,35.3,1896.12,2421.2,1079.0,13.0,30.7,1897.21,2423.2,1079.1,13.3,26.6,1898.36,2424.8,1079.1,13.6,22.9,1899.59,2426.2,1079.1,13.8,19.9,1900.88,2427.2,1079.1,14.1,17.6,1902.24,2428.0,1079.1,14.4,15.9,1903.68,2428.4,1079.1,14.7,14.9,1905.19,2428.5,1079.2,15.0,14.4,1906.77,2428.2,1079.2,15.4,14.3,1908.44,2427.6,1079.2,15.7,14.6,1910.18,2426.7,1079.2,16.0,15.1,1912.0,2425.7,1079.2,16.4,15.8,1913.91,2424.5,1079.3,16.7,16.7,1915.9,2423.2,1079.3,17.1,17.6,1917.97,2422.0,1079.3,17.4,18.5,1920.13,2420.8,1079.3,17.8,19.3,1922.38,2419.8,1079.4,18.2,20.0,1924.72,2418.9,1079.4,18.6,20.4,1927.15,2418.4,1079.4,19.0,20.6,1929.67,2418.2,1079.5,19.4,20.4,1932.29,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0,2418.5,1079.5,19.8,19.8,1935.0]},"T":{"f0":131.5,"d":[1919.0,1011.5,10.0,19.0,0.0,1919.0,1010.06,10.0,16.11,0.0,1919.0,1008.09,10.0,12.17,0.0,1919.0,1006.4,10.0,8.79,0.0,1919.0,1005.44,10.0,6.88,0.0,1919.0,1005.29,10.0,6.58,0.0,1919.0,1005.74,10.0,7.49,0.0,1919.0,1006.46,10.0,8.91,0.0,1919.0,1007.12,10.0,10.23,0.0,1919.0,1007.53,10.0,11.06,0.0,1919.0,1007.64,10.0,11.28,0.0,1919.0,1007.51,10.0,11.01,0.0,1919.0,1007.25,10.0,10.51,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1006.83,10.0,9.65,0.0,1919.0,1006.76,10.0,9.53,0.0,1919.0,1006.8,10.0,9.6,0.0,1919.0,1006.89,10.0,9.77,0.0,1919.0,1006.98,10.0,9.97,0.0,1919.0,1007.05,10.0,10.11,0.0,1919.0,1007.09,10.0,10.17,0.0,1919.0,1007.08,10.0,10.16,0.0,1919.0,1007.05,10.0,10.1,0.0,1919.0,1007.01,10.0,10.03,0.0,1919.0,1006.98,10.0,9.97,0.0,1919.0,1006.97,10.0,9.94,0.0,1919.0,1006.97,10.0,9.94,0.0,1919.0,1006.98,10.0,9.96,0.0,1919.0,1006.99,10.0,9.99,0.0,1919.0,1007.0,10.0,10.01,0.0,1919.0,1007.01,10.0,10.02,0.0,1919.0,1007.01,10.0,10.02,0.0,1919.0,1007.01,10.0,10.02,0.0,1919.0,1007.0,10.0,10.01,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,9.99,0.0,1919.0,1007.0,10.0,9.99,0.0,1919.0,1007.0,10.0,9.99,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0,1919.0,1007.0,10.0,10.0,0.0]}}};
+</script>
+<script>
+(()=>{
+  const root=document.documentElement;
+  const cube=document.getElementById('cube'), scene=cube.parentElement;
+  const rolled=document.getElementById('rolled'), rollName=document.getElementById('rollName');
+  const rolls=[...document.querySelectorAll('.roll')], faces=[...cube.children];
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- die rolling on scroll ---------- */
+  const turn={1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]};
+  let current=-1, spins=0, tick=false, gated=true;
+  function setFace(n){
+    if(n===current) return;
+    spins += (n>current?1:-1); current=n;
+    const RM=root.dataset.v==='g'&&root.dataset.dv==='roll'; if(RM) spins=0;   // rolling dock: stays facing you, the pips change instead
+    const [x,y]=RM?[0,0]:(n?turn[n]:[-24,32]);
+    if(!RM){                                                    // the rolling dock sets the die's turn itself, every frame
+      cube.style.setProperty('--rx',(x-10+spins*360)+'deg');
+      cube.style.setProperty('--ry',(y+12+spins*360)+'deg');
+      cube.style.setProperty('--rz',(spins%2?6:-5)+'deg');
+    }
+    faces.forEach((f,i)=>f.classList.toggle('front',i+1===(RM?1:n)));
+    cube.classList.toggle('lit',n>0);
+    rolled.textContent=n||'–';
+    rollName.textContent=n?rolls[n-1].dataset.name:'Scroll to roll';
+    document.body.style.setProperty('--gy',(30+n*8)+'%');
+    onFace(n);
+  }
+  /* ---------- layout lab ---------- */
+  const stageIn=document.querySelector('.stage-inner'), stageHome=scene.parentNode, stageNext=scene.nextSibling, slot3d=document.getElementById('slot3d');
+  const vTrack=document.getElementById('vTrack'), vName=document.getElementById('vName'), vNum=document.getElementById('vNum'), vTxt=document.getElementById('vTxt');
+  const V=()=>root.dataset.v||'a';
+  let ticks=[];
+  function layoutTrack(){                                       // b: one diamond on the track for each section, where that section takes over
+    vTrack.innerHTML=''; ticks=[];
+    if(V()!=='b') return;
+    const max=Math.max(1,document.documentElement.scrollHeight-innerHeight), travel=vTrack.clientHeight;
+    rolls.forEach((r,i)=>{ const top=r.getBoundingClientRect().top+scrollY-innerHeight*.55+1;
+      const a=document.createElement('a'); a.style.top=(Math.min(1,Math.max(0,top/max))*travel)+'px'; a.title=r.dataset.name;
+      a.onclick=()=>scrollTo({top:Math.max(0,top+2),behavior:reduce?'auto':'smooth'}); vTrack.appendChild(a); ticks.push(a); });
+  }
+  function placeB(){                                            // b: the die rides down the track, rolling (anticlockwise down a right-hand wall)
+    if(V()!=='b'||gated){ return; }
+    const max=Math.max(1,document.documentElement.scrollHeight-innerHeight), travel=Math.max(0,vTrack.clientHeight-scene.offsetWidth);
+    const y=Math.min(1,scrollY/max)*travel, D=scene.offsetWidth, deg=-(y/(D/2))*180/Math.PI;
+    stageIn.style.transform=`translateY(${y}px) rotate(${deg}deg)`;
+    vName.style.transform=`translateY(${96+y+D/2-8}px)`;
+  }
+  /* e: roll to travel. The die rattles, tumbles three extra turns with a bounce, lands on a random new number
+     and the page glides to that section. The logo in the bar takes you back to the start instead. */
+  let rolling=false;
+  function rollTravel(){
+    if(rolling||gated) return; rolling=true;
+    const opts=[1,2,3,4,5,6].filter(k=>k!==current), n=opts[Math.floor(Math.random()*opts.length)];
+    const go=()=>{
+      cube.style.transition='transform 1.5s cubic-bezier(.15,.85,.25,1)';
+      spins+=Math.random()<.5?3:-3; current=-99; setFace(n);
+      if(!reduce) scene.animate([{transform:'translateY(0)'},{transform:`translateY(${-scene.offsetWidth*.55}px)`,offset:.3,easing:'ease-in'},{transform:'translateY(0)',offset:.62},{transform:`translateY(${-scene.offsetWidth*.12}px)`,offset:.78,easing:'ease-in'},{transform:'translateY(0)'}],{duration:1300,easing:'ease-out'});
+      setTimeout(()=>{
+        cube.style.transition='';
+        const r=rolls[n-1], y=Math.max(0,r.getBoundingClientRect().top+scrollY-innerHeight*.5+40);
+        scrollTo({top:y,behavior:reduce?'auto':'smooth'});
+        const t0=performance.now(); const chk=()=>{ if(Math.abs(scrollY-y)<4||performance.now()-t0>2600){ rolling=false; update(); } else requestAnimationFrame(chk); }; chk();
+      },reduce?0:1400);
+    };
+    if(reduce){ go(); return; }
+    scene.style.animation='rattle .32s linear'; setTimeout(()=>{ scene.style.animation=''; go(); },320);
+  }
+  document.querySelector('.mark').addEventListener('click',e=>{ if(!gated&&V()==='e'){ e.preventDefault(); backToStart(); } });
+  /* f: each stamp takes you back to its section */
+  rolls.forEach(r=>r.querySelector('.chip').addEventListener('click',()=>{ if(V()==='f') scrollTo({top:r.getBoundingClientRect().top+scrollY-innerHeight*.3,behavior:reduce?'auto':'smooth'}); }));
+  /* g: dice dock */
+  const dock=document.getElementById('dock'), dks=[...dock.children], dNum=document.getElementById('dNum'), dTxt=document.getElementById('dTxt');
+  dks.forEach((b,i)=>{ b.setAttribute('aria-label',rolls[i].dataset.name); b.onclick=()=>{ b.blur(); const r=rolls[i], bar=document.querySelector('.bar').offsetHeight; scrollTo({top:i===0?0:Math.max(0,r.getBoundingClientRect().top+scrollY-bar-8),behavior:reduce?'auto':'smooth'}); }; });
+  const DV=()=>root.dataset.dv||'dock';
+  let baseW=0;
+  function placeG(n,instant){                                   // the die sits on the dock slot of the section you're on and rolls along to the next
+    if(V()!=='g') return;
+    const k=Math.max(1,n||1), D=scene.offsetWidth, a=dks[0].getBoundingClientRect();
+    if(!baseW||!dks[0].style.width) baseW=dks[0].offsetWidth;
+    stageIn.style.left=(a.left+a.width/2-D/2)+'px'; stageIn.style.top=(a.top+a.height/2-D/2)+'px';
+    dNum.textContent=String(k).padStart(2,'0'); dTxt.textContent=rolls[k-1].dataset.name;
+    if(DV()==='roll'){ placeRoll(); return; }
+    const b=dks[k-1].getBoundingClientRect(), sc=b.width/baseW;
+    const dx=(b.left+b.width/2)-(a.left+a.width/2), dy=(b.top+b.height/2)-(a.top+a.height/2);
+    if(instant) stageIn.style.transition='none';
+    stageIn.style.transform=(dx||dy?`translate(${dx}px,${dy}px)`:'')+(Math.abs(sc-1)>.01?` scale(${sc})`:'');
+    if(instant){ void stageIn.offsetWidth; stageIn.style.transition=''; }
+    dks.forEach((d,i)=>d.classList.toggle('on',i+1===k));
+  }
+  /* roll: the die's place on the dock follows the scroll. It stays on a section's face while you read and tips over
+     edge to edge to the next face over the last stretch of each section: a quarter turn per face, with its centre
+     rising and falling as it pivots on its corner, the way a real die rolls. */
+  /* Rolling dock, tied to the scroll. The die's place along the dock follows the page continuously, so it is always
+     moving while you scroll and never stops and starts. It lies flat on a section's face around the middle of that
+     section and tips over its corner (the 45° point) exactly as the next section takes over, so the number changes
+     with the section. Forward is a clockwise roll, back is anticlockwise. Its centre rises and falls as it pivots on
+     a corner, like a real die. Each time it comes down flat on a face it slams: a small squash, a faint puff of red
+     sparks where its trailing edge hits, the pips pop and the dock slot pulses.
+     A very short follow (FOLLOW ms) smooths out mouse-wheel steps so the roll stays fluid. */
+  const FOLLOW=60;
+  let rs=0, rTarget=0, rRaf=0, rLast=0, shown=1, armed=false, lastInt=0, lastKnots=null, dragging=false, dragged=false;
+  function rollTarget(){
+    const N=rolls.length, maxY=Math.max(1,document.documentElement.scrollHeight-innerHeight);
+    const acts=rolls.map(r=>Math.min(maxY,r.getBoundingClientRect().top+scrollY-innerHeight*.55));
+    // flat on a face when its section is shown in full (its top just under the bar, where tapping the dock takes you)
+    const bar=document.querySelector('.bar').offsetHeight;
+    const mids=rolls.map((r,i)=>i===0?0:Math.min(maxY,r.getBoundingClientRect().top+scrollY-bar-8));
+    const knots=[];                                            // (scroll, face) pairs: flat mid-section, 45° at each changeover
+    for(let i=0;i<N;i++){ knots.push([mids[i],i]); if(i<N-1) knots.push([acts[i+1],i+.5]); }
+    for(let i=1;i<knots.length;i++) if(knots[i][0]<=knots[i-1][0]) knots[i][0]=knots[i-1][0]+1;
+    lastKnots=knots;
+    const y=scrollY;
+    if(y<=knots[0][0]) return 0;
+    for(let i=1;i<knots.length;i++) if(y<=knots[i][0]){ const [y0,s0]=knots[i-1], [y1,s1]=knots[i]; return s0+(s1-s0)*(y-y0)/(y1-y0); }
+    return N-1;
+  }
+  function drawRoll(s){
+    const a=dks[0].getBoundingClientRect(), pitch=dks[1].getBoundingClientRect().left-a.left, D=scene.offsetWidth;
+    const th=s*90, t=((th%90)+90)%90, lift=D/2*(Math.SQRT2*Math.sin((45+t)*Math.PI/180)-1);
+    stageIn.style.transition='none';
+    // The view stays fixed (looking slightly down at it from the left, the same angle it lands at after the intro);
+    // the die itself turns about the axis pointing at you, so the top and side you can see stay where they belong.
+    stageIn.style.transform=`translate(${s*pitch}px,${-lift}px)`;
+    cube.style.transition='none';
+    cube.style.setProperty('--rx','-10deg'); cube.style.setProperty('--ry','12deg'); cube.style.setProperty('--rz',th+'deg');
+    cube.style.setProperty('--th',th+'deg');                   // keeps the front face's gloss lit from the top left
+    const sh=document.getElementById('rShadow');                // shadow on the dock under the die, smaller and fainter as it lifts
+    sh.style.opacity=gated?0:Math.max(0,1-lift/(D*.35));
+    sh.style.transform=`translate(${a.left+a.width/2+s*pitch-D*.525}px,${a.top+a.height/2+D/2-5}px) scaleX(${1-.35*Math.min(1,lift/(D*.2))})`;
+    const k=Math.min(rolls.length,Math.max(1,Math.round(s)+1));
+    if(k!==shown){ shown=k; cube.dataset.show=k;
+      if(!reduce) faces[0].querySelectorAll('i').forEach(p=>p.animate([{transform:'rotate(45deg) scale(1.5)'},{transform:'rotate(45deg) scale(.92)',offset:.6},{transform:'rotate(45deg) scale(1)'}],{duration:300,easing:'ease-out'}));
+      dNum.textContent=String(k).padStart(2,'0'); dTxt.textContent=rolls[k-1].dataset.name; }
+    dks.forEach((d,i)=>d.classList.toggle('on',i+1===k));
+    // the slam: when it comes down flat on a face (only after it has properly tipped, so small wobbles don't count)
+    const near=Math.round(s), off=Math.abs(s-near);
+    if(off>.18) armed=true;
+    if(armed&&off<.03&&near!==lastInt){ armed=false; const dir=near>lastInt?1:-1; lastInt=near; landFX(dir,near); }
+    else if(off<.03) lastInt=near;
+  }
+  function landFX(dir,k){
+    if(reduce) return;
+    scene.animate([{transform:'scale(1.07,.9)',transformOrigin:'50% 100%'},{transform:'scale(.98,1.03)',offset:.55},{transform:'scale(1)'}],{duration:260,easing:'cubic-bezier(.2,.8,.3,1)'});
+    const r=scene.getBoundingClientRect(), x=dir>0?r.left+4:r.right-4, y=r.bottom-2;
+    for(let i=0;i<3;i++){
+      const sp=document.createElement('span'), ang=(dir>0?180:0)+(dir>0?1:-1)*(-15-Math.random()*45), len=4+Math.random()*5, dist=8+Math.random()*9;
+      sp.style.cssText=`position:fixed;left:${x}px;top:${y}px;width:${len}px;height:1.5px;border-radius:2px;background:var(--blood);box-shadow:0 0 3px rgba(184,20,28,.6);opacity:.7;pointer-events:none;z-index:22;transform-origin:0 50%`;
+      document.body.appendChild(sp);
+      const rad=ang*Math.PI/180;
+      sp.animate([{transform:`rotate(${ang}deg) scaleX(.2)`,opacity:.7},{transform:`translate(${Math.cos(rad)*dist}px,${Math.sin(rad)*dist}px) rotate(${ang}deg) scaleX(1)`,opacity:.55,offset:.4},{transform:`translate(${Math.cos(rad)*dist*1.5}px,${Math.sin(rad)*dist*1.5}px) rotate(${ang}deg) scaleX(.1)`,opacity:0}],{duration:360+Math.random()*100,easing:'ease-out'}).finished.then(()=>sp.remove());
+    }
+    const slot=dks[k];
+    if(slot) slot.animate([{boxShadow:'0 0 0 0 rgba(184,20,28,.45)'},{boxShadow:'0 0 0 8px rgba(184,20,28,0)'}],{duration:450,easing:'ease-out'});
+  }
+  function rollFrame(now){
+    const dt=rLast?Math.min(50,now-rLast):16; rLast=now;
+    const d=rTarget-rs;
+    rs=Math.abs(d)<.0015||reduce?rTarget:rs+d*(1-Math.exp(-dt/FOLLOW));
+    drawRoll(rs);
+    if(rs!==rTarget) rRaf=requestAnimationFrame(rollFrame); else { rRaf=0; rLast=0; }
+  }
+  function placeRoll(){                                         // called on scroll and whenever the dock moves
+    if(V()!=='g'||DV()!=='roll'||gated) return;
+    rTarget=rollTarget();
+    if(dragging){ if(rRaf){ cancelAnimationFrame(rRaf); rRaf=0; rLast=0; } rs=rTarget; drawRoll(rs); return; }   // dragging: the die is under your finger, no follow
+    if(!rRaf){ drawRoll(rs); if(rs!==rTarget) rRaf=requestAnimationFrame(rollFrame); }
+  }
+  /* Drag the die along the dock to scroll: where you hold it on the dock is where the page goes, rolling as it moves.
+     Let go and it settles on the nearest face, bringing that whole section into view. A tap without moving is still
+     a tap (to the top, then back to the start). */
+  function scrollForRoll(s){                                     // the inverse of rollTarget: dock position → scroll position
+    rollTarget(); const k=lastKnots; if(!k) return 0;
+    if(s<=k[0][1]) return k[0][0];
+    for(let i=1;i<k.length;i++) if(s<=k[i][1]){ const [y0,s0]=k[i-1], [y1,s1]=k[i]; return y0+(y1-y0)*(s-s0)/(s1-s0); }
+    return k[k.length-1][0];
+  }
+  let dragX=0, dragS=0, dragId=null;
+  scene.style.touchAction='none';
+  scene.addEventListener('pointerdown',e=>{
+    if(V()!=='g'||DV()!=='roll'||gated||e.button>0) return;
+    dragId=e.pointerId; dragX=e.clientX; dragS=rs; dragged=false; scene.setPointerCapture(e.pointerId);
+  });
+  scene.addEventListener('pointermove',e=>{
+    if(e.pointerId!==dragId) return;
+    const dx=e.clientX-dragX;
+    if(!dragged&&Math.abs(dx)<6) return;
+    if(!dragged){ dragged=true; dragging=true; root.classList.add('dragdie'); }
+    const pitch=dks[1].getBoundingClientRect().left-dks[0].getBoundingClientRect().left;
+    const s=Math.max(0,Math.min(rolls.length-1,dragS+dx/pitch));
+    scrollTo(0,scrollForRoll(s));
+  });
+  const dragEnd=e=>{
+    if(e.pointerId!==dragId) return; dragId=null;
+    if(!dragging) return;
+    dragging=false; root.classList.remove('dragdie');
+    const k=Math.round(rs);                                       // settle on the nearest face
+    scrollTo({top:k===0?0:scrollForRoll(k),behavior:reduce?'auto':'smooth'});
+  };
+  scene.addEventListener('pointerup',dragEnd); scene.addEventListener('pointercancel',dragEnd);
+  scene.addEventListener('click',e=>{ if(dragged){ e.stopImmediatePropagation(); e.preventDefault(); dragged=false; } },true);
+  function snapRoll(){ if(rRaf){ cancelAnimationFrame(rRaf); rRaf=0; rLast=0; } rTarget=rs=rollTarget(); lastInt=Math.round(rs); armed=false; drawRoll(rs); }
+  addEventListener('scroll',()=>{ if(DV()==='roll') placeRoll(); },{passive:true});
+  /* mag: faces grow as the pointer passes over them */
+  let magAmt=0, magTarget=0, magX=0, magRaf=0, magBase=[];
+  function magFrame(){
+    magAmt+=(magTarget-magAmt)*.28; if(Math.abs(magTarget-magAmt)<.01) magAmt=magTarget;
+    dks.forEach((d,i)=>{ const dist=Math.abs(magX-magBase[i]), g=Math.exp(-((dist/75)**2)), s=1+.75*magAmt*g;
+      d.style.width=(baseW*s)+'px'; d.style.setProperty('--s',s); });
+    placeG(current>0?current:1,true);
+    magRaf=magAmt!==magTarget?requestAnimationFrame(magFrame):0;
+    if(!magRaf&&magAmt===0){ dks.forEach(d=>{ d.style.width=''; d.style.removeProperty('--s'); }); placeG(current>0?current:1,true); }
+  }
+  dock.addEventListener('mousemove',e=>{ if(DV()!=='mag') return;
+    if(magAmt===0) magBase=dks.map(d=>{ const r=d.getBoundingClientRect(); return r.left+r.width/2; });
+    magX=e.clientX; magTarget=1; if(!magRaf) magRaf=requestAnimationFrame(magFrame); });
+  dock.addEventListener('mouseleave',()=>{ if(DV()!=='mag') return; magTarget=0; if(!magRaf) magRaf=requestAnimationFrame(magFrame); });
+  /* hide: down = away, up = back; it also comes back near the bottom of the screen and at the end of the page */
+  let lastY=0;
+  addEventListener('scroll',()=>{ if(DV()!=='hide'||gated) return; const y=scrollY, end=y>document.documentElement.scrollHeight-innerHeight-40;
+    if(y>lastY+6&&!end) root.classList.add('away'); else if(y<lastY-6||end) root.classList.remove('away'); lastY=y; },{passive:true});
+  addEventListener('mousemove',e=>{ if(DV()==='hide'&&e.clientY>innerHeight-150) root.classList.remove('away'); },{passive:true});
+  function applyDock(dv){
+    root.dataset.dv=dv; root.classList.remove('away'); 
+    document.querySelectorAll('#dl button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dv===dv));
+    magAmt=magTarget=0; dks.forEach(d=>{ d.style.width=''; d.style.removeProperty('--s'); }); baseW=0;
+    requestAnimationFrame(()=>{ placeG(current>0?current:1,true); });
+  }
+  document.querySelectorAll('#dl button').forEach(b=>b.onclick=()=>applyDock(b.dataset.dv));
+
+  function onFace(n){                                           // a face change, per layout
+    placeG(n);
+    ticks.forEach((t,i)=>t.classList.toggle('on',i+1===n));
+    if(n){ vNum.textContent=String(n).padStart(2,'0'); vTxt.textContent=rolls[n-1].dataset.name; }
+    if(V()==='d'&&n){
+      const right=n%2===0, mob=innerWidth<=860;
+      stageIn.style.transform=right?(mob?`translateX(${innerWidth-28-scene.offsetWidth}px)`:'translateX(50vw)'):'';
+      document.body.style.setProperty('--gx',right?'75%':'25%');
+      if(!reduce) scene.animate([{transform:'translateY(0)'},{transform:`translateY(${-scene.offsetWidth*.45}px)`,easing:'cubic-bezier(.3,0,.6,1)'},{transform:'translateY(0)'}],{duration:1100,easing:'cubic-bezier(.4,0,.7,1)'});
+    }
+  }
+  function applyLayout(v,keep){
+    root.dataset.v=v; try{localStorage.setItem('dsLayout',v);}catch(e){}
+    document.querySelectorAll('#lab button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+    stageIn.style.transform=''; stageIn.style.left=''; stageIn.style.top=''; stageIn.style.transition=v==='d'?'':'none';
+    if(v==='c'){ if(scene.parentNode!==slot3d) slot3d.appendChild(scene); }
+    else if(scene.parentNode!==stageHome) stageHome.insertBefore(scene,stageNext);
+    if(!keep){ scrollTo(0,0); }
+    rolls.forEach(r=>r.classList.remove('seen'));
+    if(v==='g') placeG(1,true);
+    requestAnimationFrame(()=>{ layoutTrack(); current=-1; spins=0; if(!gated) update(); placeB(); if(v==='g') placeG(current>0?current:1,true); stageIn.style.transition=''; });
+  }
+  document.querySelectorAll('#lab button').forEach(b=>b.onclick=()=>applyLayout(b.dataset.v));
+  addEventListener('resize',()=>{ layoutTrack(); placeB(); placeG(current>0?current:1,true); });
+
+  function update(){
+    tick=false; let n=0;
+    rolls.forEach((r,i)=>{const b=r.getBoundingClientRect(); r.classList.toggle('active',b.top<innerHeight*.6&&b.bottom>innerHeight*.3); if(b.top<innerHeight*.55) n=i+1;});
+    if(!gated&&!rolling) setFace(V()==='c'?1:n);   // c: the big die stays on 1 up in section one
+    rolls.forEach(r=>{ if(r.classList.contains('active')) r.classList.add('seen'); });   // c: each section's die rolls in the first time you reach it
+    placeB();
+  }
+  addEventListener('scroll',()=>{if(!tick){tick=true;requestAnimationFrame(update)}},{passive:true});
+  addEventListener('resize',update);
+
+  /* ---------- intro: button → die tumbles in and splits into the logo → logo folds back into the die → page ---------- */
+  /* The tumble, split and settle are the original logo.mp4 re-drawn as vectors: every part's position and
+     rotation was measured frame by frame (30 fps, in the video's 3840×2160 space) and is replayed from LOGO_TRACKS,
+     so there is no video to hand over from. The measured paths were then smoothed: the die's hops are true parabolas and the
+     other parts follow fitted curves, with spins easing in and out. The pip's path is simulated: it works loose inside the die,
+     rattles harder with each landing, and when the die lands and bursts open it slams off the die's floor and launches straight out onto the E.
+     CLAUDE: EXPERIMENTAL ANIMATION (built from the original, Session 2, 7–8 Oct):
+     The die tumbles in turned 45° so it lands on its corners. Its pip comes loose and rattles round inside, bouncing off the
+     walls each time the die lands. On the last landing the die rolls over its corner and slams flat; that cracks it: the D stops
+     dead, bounces and slides (turning 90°) to rest with its floor arm's tip under the I, and the E is thrown up and over it,
+     lands just past it and hops into place. The pip bounces off the die's floor, flies out and hits the tip of the E's top arm
+     (the E rocks back from the knock) and splits: one half springs into the E's dot, the other pops high and slams straight
+     down through the I (leaving the I's drip cap behind) onto the tip of the D's arm, kick-flipping the D a little over half a
+     turn clockwise into its place, where it over-rotates, taps the floor and settles. The finished logo holds with a soft sheen,
+     then folds into the die. Effects: floor shadows, sparks and a small screen shake on impacts, dust rings, squash on landings,
+     a punch-in on the slam, red trails on the blips, a faint floor line fading out across the middle, and a red ring as the pip
+     lands on the real die. Clicking the die afterwards rolls the intro again. */
+  const intro=document.getElementById('intro'), introParent=intro.parentNode, introNext=intro.nextSibling;
+  const svg=document.getElementById('mark'), all=document.getElementById('markAll');
+  const pD=document.getElementById('pD'), pE=document.getElementById('pE');
+  const D=document.getElementById('mD'), E=document.getElementById('mE');
+  const I=document.getElementById('gI'), dot=document.getElementById('gDot');
+  const ghostLayer=document.getElementById('ghosts');
+  const spr={P:document.getElementById('sP'),A:document.getElementById('sA'),B:document.getElementById('sB'),T:document.getElementById('sT')};
+  const TK=window.LOGO_TRACKS;
+  const SPEED=1;           // playback speed (1 = normal)
+  const FREEZE=null;       // review hold: set a frame number to pause there (null = play straight through)
+  const STOP=null;         // with FREEZE: the frame the D and E stop at
+  const FEND=168;          // frame at which the logo is complete: the D has kick-flipped home and settled
+  const HOLD=1050;         // ms the finished logo is held before it folds into the die (a beat to read it, with a soft sheen across it)
+  const VD=[1601.5,1080], VE=[2237.5,1080];   // the D and E corner points the chevrons rotate about
+  let started=false, done=false, raf=0;
+  root.classList.add('gate'); scrollTo(0,0);
+  const reroll=location.hash==='#reroll', back=location.hash==='#back';
+  if(back){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
+  if(reroll){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
+
+  // hold the die flat on face 1 so the folded square lines up with its front face
+  function flatDie(){ cube.style.transition='none'; cube.style.setProperty('--rx','0deg'); cube.style.setProperty('--ry','0deg'); cube.style.setProperty('--rz','0deg'); faces.forEach((f,i)=>f.classList.toggle('front',i===0)); void cube.offsetWidth; }
+  flatDie();
+
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const anim=(el,kf,opt)=>el.animate(kf,Object.assign({fill:'forwards',easing:'cubic-bezier(.65,0,.25,1)'},opt)).finished;
+
+  /* ----- keyframe sampling ----- */
+  const Q=TK.q||1;          // samples per video frame
+  const NPI=TK.pi.length/6;
+  function samplePieces(f){
+    let x=(f-TK.f0)*Q; if(x<0) x=0;
+    const i=Math.floor(x), w=x-i, o=[];
+    if(i>=NPI-1){ for(let k=0;k<6;k++) o.push(TK.pi[(NPI-1)*6+k]); return o; }
+    for(let k=0;k<6;k++) o.push(TK.pi[i*6+k]*(1-w)+TK.pi[(i+1)*6+k]*w);
+    return o;
+  }
+  const holdLast={A:1,B:1};
+  function sampleSprite(key,f){
+    const s=TK.sp[key], n=s.d.length/5, x=(f-s.f0)*Q;
+    if(x<0) return null;
+    const i=Math.floor(x);
+    if(i>=n-1){ if(x>n-1 && !holdLast[key]) return null; const o=[]; for(let k=0;k<5;k++) o.push(s.d[(n-1)*5+k]); return o; }
+    const w=x-i, o=[];
+    for(let k=0;k<5;k++) o.push(s.d[i*5+k]*(1-w)+s.d[(i+1)*5+k]*w);
+    return o;
+  }
+  const r3=v=>Math.round(v*1000)/1000;
+  // a chevron: rotate by deg about its corner point V, then shift by (dx,dy)
+  const css=m=>'matrix('+m.map(r3).join(',')+')';
+  function pieceMatrix(dx,dy,deg,V){
+    const t=deg*Math.PI/180, c=Math.cos(t), s=Math.sin(t);
+    return [c,s,-s,c,V[0]+dx-(c*V[0]-s*V[1]),V[1]+dy-(s*V[0]+c*V[1])];
+  }
+  // a block: unit square scaled to w×h, rotated, centred on (cx,cy)
+  function spriteMatrix(p){
+    const t=p[4]*Math.PI/180, c=Math.cos(t), s=Math.sin(t);
+    return [p[2]*c,p[2]*s,-p[3]*s,p[3]*c,p[0],p[1]];
+  }
+  // matrix functions return arrays; each has two reference points used to measure how far a part moves
+  const pieceFn={D:f=>{const p=samplePieces(f);return pieceMatrix(p[0],p[1],p[2],VD)}, E:f=>{const p=samplePieces(f);return pieceMatrix(p[3],p[4],p[5],VE)}};
+  const spriteFn=k=>f=>{const p=sampleSprite(k,f);return p?spriteMatrix(p):null};
+  const spriteAt=k=>f=>sampleSprite(k,f);
+  // blocks are drawn as real rectangles (position, size, rotation) rather than a scaled unit square, which keeps their edges sharp
+  const r2=v=>Math.round(v*100)/100;
+  function setRect(el,p){
+    el.setAttribute('x',r2(p[0]-p[2]/2)); el.setAttribute('y',r2(p[1]-p[3]/2));
+    el.setAttribute('width',r2(p[2])); el.setAttribute('height',r2(p[3]));
+    el.setAttribute('transform','rotate('+r2(p[4])+' '+r2(p[0])+' '+r2(p[1])+')');
+  }
+  const refD=[[1421,908.5],[1421,1251.5]], refE=[[2418,908.5],[2418,1251.5]], refS=[[.5,.5],[-.5,.5]];
+  const ap=(m,p)=>[m[0]*p[0]+m[2]*p[1]+m[4],m[1]*p[0]+m[3]*p[1]+m[5]];
+  const moved=(a,b,ref)=>Math.max(...ref.map(p=>{const x=ap(a,p),y=ap(b,p);return Math.hypot(x[0]-y[0],x[1]-y[1])}));
+
+  /* ----- a whisper of motion blur: one faint copy of each part a quarter frame either side,
+     shown only while that part is moving fast, so anything slow or settled stays perfectly crisp ----- */
+  const OFFS=[-.25,.25];
+  const BLUR_MIN=8;        // movement (in 3840-wide units per quarter frame) below which no trail is drawn
+  const ghostSets=[];
+  function addGhosts(srcEl,fn,ref,until){
+    const nodes=OFFS.map(()=>{ const c=srcEl.cloneNode(true); c.removeAttribute('id'); c.style.opacity='.16'; c.style.display='none'; ghostLayer.appendChild(c); return c; });
+    ghostSets.push({fn,ref,until,nodes,params:arguments[4],src:srcEl});
+  }
+  if(!reduce){
+    addGhosts(D,pieceFn.D,refD); ghostSets[ghostSets.length-1].isD=true; addGhosts(E,pieceFn.E,refE); ghostSets[ghostSets.length-1].isD=true;
+    addGhosts(spr.P,spriteFn('P'),refS,undefined,spriteAt('P')); addGhosts(spr.B,spriteFn('B'),refS,FEND,spriteAt('B'));
+    addGhosts(spr.A,spriteFn('A'),refS,141,spriteAt('A'));   // no trail once the I is a bar: it stays sharp as it springs into place
+  }
+
+  // fD: frame for the D; f: frame for everything else (they differ only while FREEZE holds the rest still)
+  /* ----- impact effects: shadows on an unseen floor, a small screen shake and sparks where pieces hit it -----
+     Times are video frames; x is the contact point in the 3840-wide drawing; s is how hard the hit is (0-1). */
+  const FX={floor:1313,
+    hits:[{f:20,x:134,w:110,s:.3},{f:40,x:670,w:110,s:.35},{f:60,x:1206,w:110,s:.55},
+          {f:64,x:1330,w:220,s:1},{f:74,x:1618,w:30,s:.4},{f:81.87,x:2262,w:12,s:.6},
+          {f:40.78,x:622.1,y:1202.2,dir:-0.663,w:12,s:0.40,k:0.30,b:1},
+          {f:41.83,x:729.1,y:1183.3,dir:-2.068,w:12,s:0.31,k:0.30,b:1},
+          {f:46.53,x:870.7,y:812.2,dir:1.811,w:12,s:0.26,k:0.30,b:1},
+          {f:54.78,x:1039.9,y:1065.5,dir:-1.606,w:12,s:0.17,k:0.30,b:1},
+          {f:61.42,x:1135.3,y:1194.1,dir:-0.588,w:12,s:0.15,k:0.30,b:1},
+          {f:64.75,x:1291.7,y:1248.5,dir:-1.351,w:12,s:0.45,k:0.30,b:1},
+          {f:101,x:2389.7,y:927.0,dir:-2.356,w:10,s:0.55,k:0.50,b:1},
+          {f:135.5,x:1919.0,y:1300.0,dir:-1.571,w:26,s:0.75,k:0.9,b:1},
+          {f:158,x:1379.4,y:1313,w:6,s:.18,k:.12},
+          {f:147.5,x:2428,y:1079,dir:-1.571,w:4,s:.13,k:0,b:1}],
+    rings:[{f:64,x:1330,s:1},{f:81.87,x:2262,s:.35},{f:135.5,x:1919,s:.7,b:1}],
+    squash:[{f:64,p:'D',x:1327,a:.07},{f:74,p:'D',x:1618,a:.025},{f:81.87,p:'E',x:2262,a:.06},{f:158,p:'D',x:1379,a:.03}],
+    punch:[{f:64,x:1330,y:1313,s:.035},{f:135.5,x:1919,y:1300,s:.018}],
+    shadowFadeFrom:100, shadowFadeTo:112};
+  const fxShadows=document.getElementById('fxShadows'), fxSparks=document.getElementById('fxSparks');
+  const NS='http://www.w3.org/2000/svg';
+  const keyD=[[1421,908.5],[1592.6,1080],[1421,1251.5]], keyE=[[2418,908.5],[2246.4,1080],[2418,1251.5]];
+  const floorLine=document.createElementNS(NS,'line'); floorLine.setAttribute('x1',-400); floorLine.setAttribute('x2',4240); floorLine.setAttribute('y1',1316); floorLine.setAttribute('y2',1316);
+  floorLine.setAttribute('stroke','url(#fxFloorGrad)'); floorLine.setAttribute('stroke-width',3); floorLine.setAttribute('opacity',0); fxShadows.appendChild(floorLine);
+  const shadowEls=[0,1,2,3,4].map(()=>{const e=document.createElementNS(NS,'ellipse'); e.setAttribute('fill','url(#fxShadowGrad)'); fxShadows.appendChild(e); return e;});
+  const ringEls=[]; for(let i=0;i<6;i++){const e=document.createElementNS(NS,'ellipse'); e.style.display='none'; document.getElementById('fxRings').appendChild(e); ringEls.push(e);}
+  const trailEls=[]; for(let i=0;i<21;i++){const l=document.createElementNS(NS,'line'); l.style.display='none'; document.getElementById('fxTrails').appendChild(l); trailEls.push(l);}
+  const sparkEls=[]; for(let i=0;i<48;i++){const l=document.createElementNS(NS,'line'); l.style.display='none'; fxSparks.appendChild(l); sparkEls.push(l);}
+  const rnd=(i,j)=>{const x=Math.sin(i*127.1+j*311.7)*43758.5453; return x-Math.floor(x);};   // fixed pseudo-random, same every play
+  function setShadow(el,pts,fade,small){
+    let x0=1e9,x1=-1e9,y1=-1e9; for(const p of pts){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);}
+    const h=Math.max(0,FX.floor-y1), near=Math.max(0,1-h/(small?520:420));           // higher up: fainter and wider
+    el.setAttribute('cx',(x0+x1)/2); el.setAttribute('cy',FX.floor+16);
+    el.setAttribute('rx',(x1-x0)/2+(small?14:40)+h*(small?.12:.25)); el.setAttribute('ry',(small?9:22)+h*(small?.015:.03));
+    el.setAttribute('opacity',(.25+.75*near)*near*fade);
+  }
+  function drawFX(f,fD,mD,mE){
+    if(reduce){ fxShadows.style.display='none'; fxSparks.style.display='none'; return; }
+    // shadows: one for the whole die until it splits, then one per piece; they fade once the logo has formed
+    const fade=1-ss01((fD-FX.shadowFadeFrom)/(FX.shadowFadeTo-FX.shadowFadeFrom));
+    const pD=keyD.map(p=>ap(mD,p)), pE=keyE.map(p=>ap(mE,p));
+    if(fD<60.5){
+      const lead=720*(1-ss01((fD-(FX.start===undefined?-40:FX.start))/18));     // its shadow arrives first
+      setShadow(shadowEls[0],pD.concat(pE).map(p=>[p[0]+lead,p[1]]),fade); shadowEls[1].setAttribute('opacity',0);
+      if(lead>1){ const o=parseFloat(shadowEls[0].getAttribute('opacity'))||0; shadowEls[0].setAttribute('opacity',Math.max(o,.55*(lead/720)**.5)); }
+    }
+    else { const flip=ss01((fD-135.5)/2)*(1-ss01((fD-156)/10)); setShadow(shadowEls[0],pD,Math.max(fade,flip)); setShadow(shadowEls[1],pE,fade); }
+    // the blip's own little shadow once it's out of the die (and each half's after the split), gone once they've settled
+    const bfade=1-ss01((f-140)/12);
+    ['P','A','B'].forEach((k,j)=>{
+      const el=shadowEls[2+j], p=sampleSprite(k,f);
+      if(!p||(k==='P'&&f<64.75)){ el.setAttribute('opacity',0); return; }
+      const a=p[4]*Math.PI/180, ex=Math.abs(p[2]/2*Math.cos(a))+Math.abs(p[3]/2*Math.sin(a)), ey=Math.abs(p[2]/2*Math.sin(a))+Math.abs(p[3]/2*Math.cos(a));
+      setShadow(el,[[p[0]-ex,p[1]+ey],[p[0]+ex,p[1]+ey]],bfade,true);
+    });
+    // a very faint floor line coming in from both sides and fading out across the middle third (where the action is): fades in with the die, out before the fold
+    floorLine.setAttribute('opacity',(.13*ss01((fD-(FX.start===undefined?-40:FX.start))/14)*(1-ss01((fD-(FEND-14))/12))).toFixed(3));
+    // shake and sparks
+    let dx=0,dy=0,n=0;
+    for(let hi=0;hi<FX.hits.length;hi++){
+      const H=FX.hits[hi], u=(H.b?f:fD)-H.f; if(u<0||u>9) continue;
+      const dir=H.dir===undefined?-Math.PI/2:H.dir, hy=H.y===undefined?FX.floor:H.y, ks=H.k===undefined?1:H.k;
+      const k=Math.exp(-u/1.8)*Math.sin(Math.PI*2*u/2.2);
+      dy+=H.s*ks*5*k*(-Math.sin(dir)); dx+=H.s*ks*(1.6*Math.exp(-u/1.8)*Math.sin(Math.PI*2*u/1.7)-5*k*Math.cos(dir));
+      const count=Math.round(4+8*H.s);
+      for(let i=0;i<count&&n<sparkEls.length;i++,n++){
+        const side=i%2?1:-1;
+        const a=dir+side*(Math.PI/2-Math.PI*(.04+.40*rnd(hi,i)));          // fans out both ways around the surface normal
+        const sp=(90+170*rnd(hi,i+9))*H.s, r=sp*(1-Math.exp(-u/2.2)), len=(30+60*rnd(hi,i+5))*H.s*Math.exp(-u/3);
+        const t=dir+Math.PI/2, o=side*(H.w/2)*rnd(hi,i+3), ox=H.x+Math.cos(t)*o, oy=hy+Math.sin(t)*o;
+        const x2=ox+Math.cos(a)*r, y2=oy+Math.sin(a)*r+0.9*u*u, x1=x2-Math.cos(a)*len, y1=y2-Math.sin(a)*len;
+        const L=sparkEls[n]; L.style.display='';
+        L.setAttribute('x1',x1); L.setAttribute('y1',y1); L.setAttribute('x2',x2); L.setAttribute('y2',y2);
+        L.setAttribute('stroke',i%3===0?'#b8141c':'#e3e3e3'); L.setAttribute('stroke-width',(i%3===0?9:6)*Math.max(.55,Math.min(1,H.s*1.6)));
+        L.setAttribute('opacity',Math.max(0,1-u/7)**1.5);
+      }
+    }
+    for(;n<sparkEls.length;n++) sparkEls[n].style.display='none';
+    // dust rings: a thin red ring (and a fainter one just behind it) rippling out along the floor
+    let ri=0;
+    for(const R of FX.rings){
+      for(const lag of [0,1.6]){
+        const u=(R.b?f:fD)-R.f-lag, el=ringEls[ri++]; if(!el) continue;
+        if(u<0||u>14){ el.style.display='none'; continue; }
+        const rx=(30+560*(1-Math.exp(-u/3.2)))*R.s*(lag?0.72:1);
+        el.style.display=''; el.setAttribute('cx',R.x); el.setAttribute('cy',FX.floor+10); el.setAttribute('rx',rx); el.setAttribute('ry',rx*.075);
+        el.setAttribute('stroke-width',(lag?4:7)*(1-u/14)+1); el.setAttribute('opacity',(lag?.3:.6)*Math.pow(1-u/14,1.5));
+      }
+    }
+    // trails: a faint red streak behind the blip on its fast arcs
+    let ti=0;
+    ['P','A','B'].forEach(k=>{
+      const p0=sampleSprite(k,f), p1=sampleSprite(k,f-0.6);
+      const sp=(p0&&p1)?Math.hypot(p0[0]-p1[0],p0[1]-p1[1])/0.6:0;
+      const on=p0&&p1&&!(k==='P'&&f<65.5)&&f<FEND-2, vis=on?Math.min(1,Math.max(0,(sp-10)/30)):0;
+      for(let j=0;j<7;j++){
+        const L=trailEls[ti++]; const a=sampleSprite(k,f-j*0.55), b=sampleSprite(k,f-(j+1)*0.55);
+        if(!vis||!a||!b){ L.style.display='none'; continue; }
+        L.style.display=''; L.setAttribute('x1',a[0]); L.setAttribute('y1',a[1]); L.setAttribute('x2',b[0]); L.setAttribute('y2',b[1]);
+        L.setAttribute('stroke-width',12*(1-j/7)+2); L.setAttribute('opacity',.45*vis*(1-j/7));
+      }
+    });
+    // punch-in: the camera nudges in on the big hits and eases back out
+    let z=0,zx=1920,zy=1080;
+    for(const P of FX.punch){ const u=fD-P.f; if(u<0||u>24) continue; const zz=P.s*(1-Math.exp(-u/0.7))*Math.exp(-u/5.5); if(zz>z){z=zz;zx=P.x;zy=P.y;} }
+    all.style.transform=z>1e-4?`translate(${zx}px,${zy}px) scale(${(1+z).toFixed(4)}) translate(${-zx}px,${-zy}px)`:'';
+    svg.style.transform=(dx||dy)?`translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px)`:'';
+  }
+  // hit-stop: on the heaviest hits the whole scene holds still for a couple of frames, so the impact lands
+  const HITSTOP=[];   // tried freezing a couple of frames on the big hits; it broke the flow, so it's off
+  function hitStop(raw){ let f=raw; for(const H of HITSTOP){ if(f>H.f) f=Math.max(H.f,f-H.d); } return f; }
+  // the blip is red, like the pip on the gate and on the real die. Each half cools to white as it lands in the logo:
+  // the I half when it slams onto the D (and its drip cap with it), the E's dot when it snaps into place
+  // while it's red the blip has a soft breathing glow (kept small so it doesn't swamp the scene); it fades as the blip cools
+  const glowLayer=document.getElementById('fxGlow'), glowEls={};
+  const haloEls={};
+  ['P','A','B','T'].forEach(k=>{ const e=document.createElementNS('http://www.w3.org/2000/svg','ellipse'); e.setAttribute('fill','url(#blipGlowGrad)'); e.setAttribute('opacity',0); glowLayer.appendChild(e); glowEls[k]=e;
+    const h=document.createElementNS('http://www.w3.org/2000/svg','ellipse'); h.setAttribute('fill','none'); h.setAttribute('stroke','#b8141c'); h.setAttribute('opacity',0); glowLayer.appendChild(h); haloEls[k]=h; });
+  function setGlow(k,p,f){
+    const e=glowEls[k]; if(!e) return;
+    const heat=heatAt(k,f);
+    const h=haloEls[k];
+    if(!p||heat<=0.01){ e.setAttribute('opacity',0); h.setAttribute('opacity',0); return; }
+    // the same breath as the gate's pip: it swells and glows brighter, and a thin ring ripples out each breath
+    const ph=((f/30)/1.2)%1, breathe=reduce?.5:.5-.5*Math.cos(ph*Math.PI*2), sc=1+.35*breathe;
+    const rot='rotate('+p[4]+' '+p[0]+' '+p[1]+')';
+    e.setAttribute('cx',p[0]); e.setAttribute('cy',p[1]); e.setAttribute('rx',(p[2]*1.05+18)*sc); e.setAttribute('ry',(p[3]*1.05+18)*sc);
+    e.setAttribute('transform',rot); e.setAttribute('opacity',(heat*(.3+.4*breathe)).toFixed(3));   // dim between breaths so the swell reads
+    if(reduce){ h.setAttribute('opacity',0); return; }
+    const r=ph;                                                     // ring: grows from the blip and fades
+    h.setAttribute('cx',p[0]); h.setAttribute('cy',p[1]); h.setAttribute('rx',p[2]*(.6+2.2*r)+6); h.setAttribute('ry',p[3]*(.6+2.2*r)+6);
+    h.setAttribute('transform',rot); h.setAttribute('stroke-width',2.2); h.setAttribute('opacity',(heat*.85*Math.max(0,1-r/.75)).toFixed(3));
+  }
+  // the blip starts red hot and cools towards white a little with every knock: each bounce inside the die, the slam off its floor,
+  // the hit on the E. Each half turns fully white as it lands in the logo (the I on the D, the dot in the E)
+  const RED=[184,20,28], WHITE=[227,227,227];
+  const KNOCKS=[[40.78,.92],[41.83,.86],[46.53,.81],[54.78,.78],[61.42,.75],[64.75,.66],[101,.5]];
+  const LAND={P:null,A:135.5,T:135.5,B:147.5};
+  function heatAt(k,f){
+    let h=1;
+    for(const [t,v] of KNOCKS){ if(f<=t) break; h=h+(v-h)*ss01((f-t)/4); }
+    if(LAND[k]!==null) h*=1-ss01((f-LAND[k])/6);
+    return h;
+  }
+  function blipColour(k,f){ const u=1-heatAt(k,f); return 'rgb('+RED.map((c,i)=>Math.round(c+(WHITE[i]-c)*u)).join(',')+')'; }
+  const ss01=u=>{u=Math.min(1,Math.max(0,u)); return u*u*(3-2*u);};
+  function squashed(m,piece,fD){
+    let a=0,x=0;
+    for(const S of FX.squash){ const u=fD-S.f; if(S.p!==piece||u<0||u>8) continue; a+=S.a*Math.exp(-u/1.5)*Math.cos(Math.PI*2*u/3.4); x=S.x; }
+    if(reduce||Math.abs(a)<1e-4) return m;
+    const sx=1+a, sy=1-a, y=FX.floor;                        // wider and flatter about the point it hit, then a little rebound
+    return [sx*m[0],sy*m[1],sx*m[2],sy*m[3],sx*m[4]+x-sx*x,sy*m[5]+y-sy*y];
+  }
+  function draw(f,fD){
+    if(fD===undefined) fD=f;
+    const mD=pieceFn.D(fD), mE=pieceFn.E(fD);   // D and E play on; the pip and blips stay frozen
+    drawFX(f,fD,mD,mE);
+    pD.style.transform=css(squashed(mD,'D',fD)); pE.style.transform=css(squashed(mE,'E',fD));
+    const main={};
+    for(const k in spr){ let p=sampleSprite(k,f); spr[k].style.display=p?'':'none';
+      if(p&&k==='B'){ const u=f-147.5; if(u>0&&u<6){ const a=.28*Math.exp(-u/1.2)*Math.cos(Math.PI*2*u/2.6); p=[p[0],p[1],p[2]*(1+a),p[3]*(1-a),p[4]]; } }   // the E dot's snap
+      if(p){ setRect(spr[k],p); spr[k].style.fill=blipColour(k,f); }
+      setGlow(k,p,f); }
+    for(const g of ghostSets){
+      const gf=g.isD?fD:f;
+      const m0=g.fn(gf);
+      g.nodes.forEach((n,j)=>{
+        const m=(g.until===undefined||gf<g.until)?g.fn(gf+OFFS[j]):null;
+        const show=m&&m0&&moved(m,m0,g.ref)>=BLUR_MIN;
+        n.style.display=show?'':'none'; if(show){ if(g.params){ setRect(n,g.params(gf+OFFS[j])); n.style.fill=g.src.style.fill; } else n.style.transform=css(m); }
+      });
+    }
+  }
+  // first video frame (counted back along the die's bounce path) at which the die is fully off the left edge of this screen
+  function startFrame(){
+    const W=innerWidth,H=innerHeight,k=Math.min(W/3840,H/2160), leftEdge=1920-(W/2)/k;
+    for(let f=14;f>TK.f0;f--){ const p=sampleSprite('P',f); if(p&&p[0]<leftEdge-340) return f; }
+    return TK.f0;
+  }
+  draw(TK.f0);
+
+  let gateReturn=async()=>{};                                  // set by the gate below
+  function startIntro(){
+    if(started) return; started=true;
+    intro.classList.add('playing');
+    svg.style.opacity=1;
+    if(reduce){ draw(FEND); crispI(); finishLogo(); return; }
+    const f0=startFrame(), t0=performance.now(); FX.start=f0;
+    const tick=now=>{
+      if(done) return;
+      const f=hitStop(f0+(now-t0)/1000*30*SPEED);
+      if(FREEZE!==null && f>=FREEZE){
+        draw(FREEZE,Math.min(f,STOP));   // the D and E play on to STOP; the pip and blips hold at FREEZE
+        if(f<STOP) raf=requestAnimationFrame(tick);
+        else if(FREEZE>=FEND){ ghostSets.forEach(g=>g.nodes.forEach(n=>n.remove())); crispI(); }   // hold it sharp
+        return;
+      }
+      if(f>=FEND){ draw(FEND); ghostSets.forEach(g=>g.nodes.forEach(n=>n.remove())); crispI(); finishLogo(); return; }
+      draw(f); raf=requestAnimationFrame(tick);
+    };
+    raf=requestAnimationFrame(tick);
+  }
+  if(reroll) setTimeout(startIntro,250);     // rolling again from the page skips the gate
+
+  /* ---------- the gate: flick the die off screen to start ---------- */
+  (()=>{
+    const gate=document.getElementById('gate'), die=document.getElementById('rollBtn'), ledge=document.getElementById('gLedge'), shadow=document.getElementById('gShadow'),
+          say=document.getElementById('gSay'), trail=document.getElementById('gTrail'), fh=document.getElementById('gFlick'), ask=document.getElementById('gAsk');
+    const S=64, PHYS={g:1300, bounce:.8, drag:.25};          // gravity in px/s², bounce kept per hit, air drag per second
+    let x=0,y=0,vx=0,vy=0,ang=0,va=0,mode='pip',raf2=0,last=0,drag=null,hist=[],shown=false,landings=0,touched=false,hintTimer=0;
+    const NSg='http://www.w3.org/2000/svg', trailLines=[], trailPts=[];
+    for(let i=0;i<9;i++){ const l=document.createElementNS(NSg,'line'); trail.appendChild(l); trailLines.push(l); }
+    const geo=()=>{ const W=gate.clientWidth,H=gate.clientHeight, ly=H*.5+S/2, hw=Math.min(70,W*.14); return {W,H,ly,hw,lx0:W/2-hw,lx1:W/2+hw}; };
+    function layout(){ const G=geo(); ledge.style.setProperty('--lw',G.hw*2+'px'); ledge.style.top=G.ly+'px'; shadow.style.top=G.ly+'px'; say.style.top=(G.ly+26)+'px'; ask.style.top=(G.ly+10)+'px'; }
+    function place(){
+      die.style.transform=`translate(${x}px,${y}px) rotate(${ang}deg)`;
+      const G=geo(), cx=x+S/2, over=cx>G.lx0-10&&cx<G.lx1+10, h=Math.max(0,G.ly-(y+S));
+      shadow.style.transform=`translate(${cx-42}px,0) scale(${Math.max(.25,1-h/320)})`;
+      shadow.style.opacity=shown&&over&&mode!=='gone'?Math.max(0,1-h/320):0;
+    }
+    function drawTrail(){
+      const sp=Math.hypot(vx,vy), on=mode==='fly'&&!reduce, vis=on?Math.min(1,Math.max(0,(sp-500)/1400)):0;
+      if(on) trailPts.unshift([x+S/2,y+S/2]); else trailPts.length=0; if(trailPts.length>10) trailPts.length=10;
+      trailLines.forEach((l,i)=>{ const a=trailPts[i], b=trailPts[i+1];
+        if(!vis||!a||!b){ l.setAttribute('opacity',0); return; }
+        l.setAttribute('x1',a[0]); l.setAttribute('y1',a[1]); l.setAttribute('x2',b[0]); l.setAttribute('y2',b[1]);
+        l.setAttribute('stroke-width',(18*(1-i/9)+2).toFixed(1)); l.setAttribute('opacity',(.4*vis*(1-i/9)).toFixed(3)); });
+    }
+    function home(){ cancelAnimationFrame(raf2); layout(); const G=geo(); x=G.W/2-S/2; y=Math.round(G.H/2-S/2); vx=vy=ang=va=0; mode=shown?'rest':'pip'; place(); die.style.visibility=''; }
+    function armHint(){ clearTimeout(hintTimer); fh.classList.remove('on'); if(touched||reduce) return;
+      hintTimer=setTimeout(()=>{ if(mode==='rest'&&!touched){ fh.style.transform=`translate(${x+S/2-6}px,${y-62}px)`; fh.classList.add('on'); } },2600); }
+    // after a few seconds on the dot alone, say what to do: "hover" with a mouse, "tap" on a touch screen
+    let askTimer=0;
+    const fine=matchMedia('(hover:hover) and (pointer:fine)');
+    function armAsk(){ clearTimeout(askTimer); gate.classList.remove('ask');
+      ask.innerHTML=fine.matches?'<b>Hover over the dot</b>':'<b>Tap the dot</b>';
+      askTimer=setTimeout(()=>{ if(!shown&&mode==='pip') gate.classList.add('ask'); },reduce?0:2500); }
+    function reveal(){ if(shown) return; shown=true; clearTimeout(askTimer); gate.classList.add('shown'); if(mode==='pip') mode='rest'; place(); armHint(); }
+    function sparks(px,py,nx,ny,power){
+      if(reduce) return;
+      const n=Math.round(3+5*power), base=Math.atan2(ny,nx);
+      for(let i=0;i<n;i++){
+        const a=base+(Math.random()-.5)*2.2, len=8+18*power*Math.random(), dist=20+60*power*Math.random(), r=a*180/Math.PI;
+        const sp=document.createElement('span'); sp.className='gspark'; sp.style.width=len+'px'; sp.style.background=i%3===0?'var(--blood)':'var(--mark)'; gate.appendChild(sp);
+        sp.animate([{transform:`translate(${px}px,${py}px) rotate(${r}deg) scaleX(1)`,opacity:1},
+                    {transform:`translate(${px+Math.cos(a)*dist}px,${py+Math.sin(a)*dist+12}px) rotate(${r+20}deg) scaleX(.3)`,opacity:0}],
+                   {duration:380+200*Math.random(),easing:'cubic-bezier(.2,.8,.3,1)'}).finished.then(()=>sp.remove());
+      }
+    }
+    function out(){                                           // off the bottom: the gate fades and the intro starts
+      mode='gone'; trailPts.length=0; drawTrail(); gate.classList.add('gone'); die.hidden=true; place(); clearTimeout(hintTimer); fh.classList.remove('on');
+      startIntro();
+    }
+    function step(now){
+      const dt=Math.min(.033,(now-last)/1000||.016); last=now; const G=geo();
+      if(mode==='fly'){
+        vy+=PHYS.g*dt; const k=Math.max(0,1-PHYS.drag*dt); vx*=k; vy*=k; va*=Math.max(0,1-.4*dt);
+        const py=y; x+=vx*dt; y+=vy*dt; ang+=va*dt;
+        const hit=(nx,ny,sp)=>{ if(sp>320) sparks(x+S/2-nx*S/2,y+S/2-ny*S/2,nx,ny,Math.min(1,sp/1800)); };
+        if(x<0&&vx<0){ hit(1,0,-vx); x=0; vx*=-PHYS.bounce; va=-va*.7+vy*.2; }
+        if(x>G.W-S&&vx>0){ hit(-1,0,vx); x=G.W-S; vx*=-PHYS.bounce; va=-va*.7-vy*.2; }
+        if(y<0&&vy<0){ hit(0,1,-vy); y=0; vy*=-PHYS.bounce; }
+        const cx=x+S/2;
+        if(vy>0&&py+S<=G.ly+1&&y+S>=G.ly&&cx>G.lx0&&cx<G.lx1){          // comes down on the ledge
+          y=G.ly-S; hit(0,-1,vy);
+          if(vy<160){ vy=0; mode='settle'; landings++; say.innerHTML=landings>1?'<b>Harder!</b> Flick it off the edge':'<b>Almost.</b> Flick it off the edge'; }
+          else { vy*=-PHYS.bounce; vx*=.82; va=vx*1.4; }
+        }
+        if(y>G.H+30){ out(); return; }
+      } else if(mode==='settle'){                                       // slides to a stop and rocks flat
+        vx*=Math.max(0,1-6*dt); x+=vx*dt; const tgt=Math.round(ang/90)*90; va=(tgt-ang)*14; ang+=va*dt;
+        if(x+S/2<G.lx0||x+S/2>G.lx1){ mode='fly'; }
+        else if(Math.abs(vx)<4&&Math.abs(tgt-ang)<.5){ ang=tgt; mode='rest'; place(); drawTrail(); return; }
+      } else if(mode==='drag'){
+        const tx=drag.px-drag.dx, ty=drag.py-drag.dy;                     // free to drag anywhere, below the ledge too
+        const k=Math.min(1,dt*22), nx=x+(tx-x)*k, ny=y+(ty-y)*k;          // follows the pointer with a little weight
+        vx=(nx-x)/dt; vy=(ny-y)/dt; x=nx; y=ny;
+        const tilt=Math.max(-28,Math.min(28,vx*.03)); ang+=(tilt-ang)*Math.min(1,dt*10);
+        hist.push([now,x,y]); while(hist.length>1&&now-hist[0][0]>90) hist.shift();
+      }
+      place(); drawTrail(); raf2=requestAnimationFrame(step);
+    }
+    function go(){ cancelAnimationFrame(raf2); last=performance.now(); raf2=requestAnimationFrame(step); }
+    function launch(){ mode='fly'; if(reduce){ out(); return; } go(); }
+    function nudge(){ touched=true; clearTimeout(hintTimer); fh.classList.remove('on'); reveal(); vx=380; vy=-620; va=420; launch(); }
+
+    die.addEventListener('pointerenter',e=>{ if(e.pointerType==='mouse') reveal(); });
+    die.addEventListener('focus',()=>{ if(die.matches(':focus-visible')) reveal(); });
+    die.addEventListener('pointerdown',e=>{
+      if(mode==='gone'||started) return; e.preventDefault(); const fresh=!shown; reveal(); die.setPointerCapture(e.pointerId);
+      const r=gate.getBoundingClientRect();
+      drag={dx:e.clientX-r.left-x,dy:e.clientY-r.top-y,px:e.clientX-r.left,py:e.clientY-r.top,sx:e.clientX,sy:e.clientY,moved:0,fresh};
+      touched=true; clearTimeout(hintTimer); fh.classList.remove('on'); hist=[[performance.now(),x,y]]; mode='drag'; gate.classList.add('dragging'); go();
+    });
+    die.addEventListener('pointermove',e=>{ if(mode!=='drag') return; const r=gate.getBoundingClientRect();
+      drag.px=e.clientX-r.left; drag.py=e.clientY-r.top; drag.moved=Math.max(drag.moved,Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)); });
+    const release=()=>{ if(mode!=='drag') return; gate.classList.remove('dragging');
+      if(drag.moved<6){ if(drag.fresh){ cancelAnimationFrame(raf2); home(); touched=false; armHint(); return; } nudge(); return; }   // on a phone the first tap just reveals the die
+      const a=hist[0], b=hist[hist.length-1], t=Math.max(16,b[0]-a[0])/1000;
+      vx=(b[1]-a[1])/t; vy=(b[2]-a[2])/t; const sp=Math.hypot(vx,vy); if(sp>3200){ vx*=3200/sp; vy*=3200/sp; }
+      va=vx*.9+(Math.random()-.5)*120; launch(); };
+    die.addEventListener('pointerup',release); die.addEventListener('pointercancel',release);
+    die.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&(mode==='rest'||mode==='pip')){ e.preventDefault(); nudge(); } });
+    addEventListener('resize',()=>{ if(mode==='rest'||mode==='pip') home(); });
+    gateReturn=async(instant)=>{
+      cancelAnimationFrame(raf2); clearTimeout(hintTimer); fh.classList.remove('on');
+      shown=false; touched=false; landings=0; trailPts.length=0; drawTrail();
+      gate.classList.remove('shown','gone','dragging'); gate.style.display='';
+      say.innerHTML='<b>Grab the die</b> and flick it'; die.hidden=false; home(); armAsk();
+      if(!instant) await die.animate([{opacity:0},{opacity:1}],{duration:380,easing:'ease-out'}).finished;
+    };
+    die.style.visibility='hidden';
+    if(reroll) gate.style.display='none';
+    else { home(); armAsk(); if(back&&!reduce) die.animate([{opacity:0},{opacity:1}],{duration:380,easing:'ease-out'}); }
+  })();
+  // While the intro plays (from the flick until the die is on the page), a tap, click, scroll or key press skips
+  // straight to the site. A short grace period stops the flick that started it from counting.
+  let playAt=0;
+  new MutationObserver(()=>{ if(intro.classList.contains('playing')) playAt=performance.now(); }).observe(intro,{attributes:true,attributeFilter:['class']});
+  const skipNow=e=>{
+    if(!started||done||!intro.isConnected||!intro.classList.contains('playing')) return;
+    if(performance.now()-playAt<350) return;
+    if(e.type==='keydown'&&(e.key==='Tab'||e.metaKey||e.ctrlKey||e.altKey)) return;
+    finish(true);
+  };
+  ['pointerdown','wheel','touchmove','keydown'].forEach(t=>addEventListener(t,skipNow,{passive:true}));
+
+  // the finished I is a thin upright bar: line its edges up with whole screen pixels so it can't render soft
+  function crispI(){
+    const m=svg.getScreenCTM(); if(!m) return;
+    const d=devicePixelRatio||1;
+    const sx=x=>Math.round((m.a*x+m.e)*d), sy=y=>Math.round((m.d*y+m.f)*d);
+    const bx=x=>(x/d-m.e)/m.a, by=y=>(y/d-m.f)/m.d;
+    let l=sx(1914.5), r=sx(1924.5), t=sy(959), b=sy(1201);
+    if(r<=l) r=l+1;
+    spr.A.removeAttribute('transform');
+    spr.A.setAttribute('x',bx(l)); spr.A.setAttribute('width',bx(r)-bx(l));
+    spr.A.setAttribute('y',by(t)); spr.A.setAttribute('height',by(b)-by(t));
+    spr.A.style.shapeRendering='crispEdges';
+  }
+  // a soft white sheen sweeping across the finished logo: copies of its parts painted with a moving gradient
+  function glint(){
+    if(reduce) return;
+    const g=document.getElementById('fxGlint'), gr=document.getElementById('fxGlintGrad'); g.innerHTML='';
+    for(const id of ['mD','mE']){ const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id); u.setAttribute('stroke-width','14'); g.appendChild(u); }
+    for(const r of [spr.A,spr.B]){ const c=r.cloneNode(); c.removeAttribute('id'); c.removeAttribute('class'); c.setAttribute('fill','url(#fxGlintGrad)'); c.style.fill=''; c.setAttribute('stroke','none'); g.appendChild(c); }
+    g.style.display='';
+    const t0=performance.now(), dur=950, from=1000, to=2800;
+    const step=now=>{ if(done) return; const u=Math.min(1,(now-t0-180)/dur); const x=from+(to-from)*Math.max(0,u)*(2-Math.max(0,u));
+      gr.setAttribute('x1',x-170); gr.setAttribute('x2',x+170);
+      if(u<1) requestAnimationFrame(step); else g.style.display='none'; };
+    requestAnimationFrame(step);
+  }
+  // when the drawing turns into the real die, its pip settles in with a small bounce and a red ring
+  function pipLand(){
+    if(reduce||done) return;
+    const face=faces[0], pip=face.children[4];
+    pip.animate([{transform:'rotate(45deg) scale(1.55)'},{transform:'rotate(45deg) scale(.82)',offset:.45},{transform:'rotate(45deg) scale(1.06)',offset:.75},{transform:'rotate(45deg) scale(1)'}],{duration:520,easing:'ease-out'});
+    const ring=document.createElement('span');
+    ring.style.cssText='position:absolute;left:50%;top:50%;width:46%;aspect-ratio:1;border:3px solid var(--blood);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(.15);opacity:.9';
+    face.appendChild(ring);
+    ring.animate([{transform:'translate(-50%,-50%) scale(.15)',opacity:.9},{transform:'translate(-50%,-50%) scale(1.25)',opacity:0}],{duration:650,easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(()=>ring.remove());
+  }
+  async function finishLogo(){
+    fxShadows.style.display='none'; fxSparks.style.display='none'; glowLayer.style.display='none'; svg.style.transform=''; all.style.transform='';
+    document.getElementById('fxTrails').style.display='none'; document.getElementById('fxRings').style.display='none';
+    if(reduce){ await wait(400); if(done) return; await anim(svg,[{opacity:1},{opacity:0}],{duration:500}); return finish(); }
+
+    // 1. the I drops away; D and E turn 45° into opposite corners and slide together; the dot becomes the pip
+    glint();
+    await wait(HOLD);
+    if(done) return;
+    document.getElementById('fxGlint').style.display='none';
+    I.style.transformOrigin='1920px 1080px';
+    anim(I,[{transform:'scaleY(1)',opacity:1},{transform:'scaleY(0)',opacity:0}],{duration:450,easing:'ease-in'});
+    D.style.transformOrigin='1601.5px 1080px'; E.style.transformOrigin='2237.5px 1080px';
+    const fold=1300;
+    anim(D,[{transform:'translate(0,0) rotate(0deg)'},{transform:'translate(446.1px,127.6px) rotate(45deg)'}],{duration:fold,delay:150});
+    anim(E,[{transform:'translate(0,0) rotate(0deg)'},{transform:'translate(-445.1px,-127.6px) rotate(45deg)'}],{duration:fold,delay:150});
+    await anim(dot,[{transform:'translate(0,0)'},{transform:'translate(-498.5px,0)'}],{duration:fold,delay:150});
+    await wait(350);
+    if(done) return;
+
+    // 2. the drawing becomes the real 3D die right where it is, at the same size, and its dot comes back to life
+    const face=faces[0].getBoundingClientRect();               // the die at home on the page, flat on face 1
+    const W=innerWidth, H=innerHeight, k=Math.min(W/3840,H/2160);
+    const sc=(269.2*k)/face.width;                             // the folded square's outer edge, stroke included
+    const dx=W/2-(face.left+face.width/2), dy=H/2-(face.top+face.height/2);
+    const here=`translate(${dx}px,${dy}px) scale(${sc})`;
+    scene.style.transition='none'; scene.style.opacity=0; scene.style.transform=here;
+    cube.classList.add('lit'); faces.forEach((f,i)=>f.classList.toggle('front',i===0));
+    let dg=document.getElementById('dotGlow');
+    if(!dg){ dg=document.createElementNS('http://www.w3.org/2000/svg','ellipse'); dg.id='dotGlow'; dg.setAttribute('cx',2418); dg.setAttribute('cy',1080); dg.setAttribute('rx',40); dg.setAttribute('ry',40); dg.setAttribute('fill','url(#blipGlowGrad)'); dg.setAttribute('stroke','none'); dot.insertBefore(dg,dot.firstChild); }
+    dg.style.opacity=0;
+    spr.B.animate([{fill:spr.B.style.fill||'rgb(227,227,227)'},{fill:'#b8141c'}],{duration:450,fill:'forwards',easing:'ease-in-out'});
+    await anim(dg,[{opacity:0},{opacity:.9}],{duration:450});
+    if(done) return;
+    scene.style.transition='opacity .3s'; scene.style.opacity=1;
+    anim(svg,[{opacity:1},{opacity:0}],{duration:300,easing:'linear'});
+    intro.style.background='transparent'; intro.style.pointerEvents='none';
+    await wait(180);
+    if(done) return;
+
+    // 3. it rolls straight to its place on the page: it tumbles forward in the direction it travels (one full roll, timed to the
+    //    move so it reads as rolling, not spinning) and comes to rest on face 1, as the site fades up around it
+    root.classList.remove('gate');
+    const T=1400, vx=-dx, vy=-dy, ax=Math.abs(vx), ay=Math.abs(vy);
+    const rollY=ax>=ay*.6?(vx<0?-360:360):0;                   // travelling left: the front face turns away to the left
+    const rollX=ay>ax*.6?(vy<0?360:-360):0;                    // travelling up: it tips over its top edge
+    const ease='cubic-bezier(.45,0,.2,1)';
+    cube.style.transition=`transform ${T}ms ${ease}`;
+    cube.style.setProperty('--rx',(-10+rollX)+'deg'); cube.style.setProperty('--ry',(12+rollY)+'deg'); cube.style.setProperty('--rz','0deg');
+    await anim(scene,[{transform:here},{transform:'translate(0,0) scale(1)'}],{duration:T,easing:ease});
+    await wait(80);
+    cube.style.transition='none'; cube.style.setProperty('--rx','-10deg'); cube.style.setProperty('--ry','12deg'); void cube.offsetWidth;   // same pose, so the page's own rolls carry on from here
+    posed=true;
+    finish();
+  }
+
+  // clicking the die once the intro is over: the page scrolls back to the first section (so the die rolls back to face 1),
+  // then the screen goes black while the die's single pip glides to the middle, and the page restarts on the gate
+  let leaving=false, posed=false;
+  async function backToStart(){
+    if(leaving) return; leaving=true;
+    if(scrollY>2){
+      scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+      const t0=performance.now();
+      await new Promise(res=>{ const chk=()=>{ if(scrollY<=2||performance.now()-t0>2500) res(); else requestAnimationFrame(chk); }; chk(); });
+      update();
+      await wait(reduce?0:1000);                               // let the die finish rolling back to face 1
+    }
+    snapRoll(); cube.dataset.show=1;
+    const veil=document.createElement('div');
+    veil.style.cssText='position:fixed;inset:0;z-index:300;background:radial-gradient(circle at 50% 50%,rgba(184,20,28,.06),transparent 38%),var(--black);opacity:0;pointer-events:none';
+    const pip=document.createElement('span'), src=faces[0].children[4].getBoundingClientRect();
+    const S=24*64/100/Math.SQRT2, x0=src.left+src.width/2-S/2, y0=src.top+src.height/2-S/2, x1=innerWidth/2-S/2, y1=innerHeight/2-S/2, k0=src.width/(S*Math.SQRT2);
+    pip.style.cssText=`position:fixed;left:0;top:0;width:${S}px;height:${S}px;background:var(--blood);z-index:301;pointer-events:none;filter:drop-shadow(0 0 5px rgba(184,20,28,.85))`;
+    document.body.append(veil,pip); faces[0].children[4].style.visibility='hidden';   // the dot lifts off the die: it's the one moving now
+    // it pops off the face, is tossed up in an arc (one spin on the way) and lands in the middle with a little bounce
+    const T=reduce?1:1250, peak=Math.min(y0,y1)-Math.min(220,innerHeight*.28), yc=2*peak-(y0+y1)/2, kPop=k0*1.7, frames=[];
+    frames.push({transform:`translate(${x0}px,${y0}px) rotate(45deg) scale(${k0})`,offset:0});
+    frames.push({transform:`translate(${x0}px,${y0-6}px) rotate(45deg) scale(${kPop})`,offset:.1,easing:'linear'});   // pops out of the die
+    const N=16;
+    for(let i=1;i<=N;i++){ const t=i/N, u=1-t;
+      const x=x0+(x1-x0)*t, y=u*u*(y0-6)+2*u*t*yc+t*t*y1, k=kPop+(1-kPop)*t;
+      frames.push({transform:`translate(${x}px,${y}px) rotate(${45+360*t}deg) scale(${k})`,offset:.1+.66*t,easing:'linear'}); }
+    frames.push({transform:`translate(${x1}px,${y1+2}px) rotate(45deg) scale(1.22,.8)`,offset:.8});                // lands
+    frames.push({transform:`translate(${x1}px,${y1-26}px) rotate(45deg) scale(.95,1.05)`,offset:.9,easing:'ease-in'}); // a small hop
+    frames.push({transform:`translate(${x1}px,${y1}px) rotate(45deg) scale(1)`,offset:1});
+    veil.animate([{opacity:0},{opacity:1}],{duration:T*.6,fill:'forwards',easing:'ease-in'});
+    await pip.animate(frames,{duration:T,fill:'forwards'}).finished;
+    // under the veil: put the intro and the gate back exactly as they were when the page first opened
+    resetIntro();
+    faces[0].children[4].style.visibility='';
+    await gateReturn(true);                                     // the gate's pip sits exactly where the tossed dot landed
+    await veil.animate([{opacity:1},{opacity:0}],{duration:reduce?1:260,fill:'forwards'}).finished;   // the veil looks just like the gate, so lifting it changes nothing
+    veil.remove(); pip.remove(); leaving=false;                 // and the gate's own pip carries on breathing in its place
+  }
+  function resetIntro(){
+    cancelAnimationFrame(raf);
+    if(!intro.isConnected) introParent.insertBefore(intro,introNext&&introNext.parentNode===introParent?introNext:null);   // back in first: animations only list for attached elements
+    document.getAnimations().forEach(a=>{ const t=a.effect&&a.effect.target; if(t&&(intro.contains(t)||scene.contains(t))) a.cancel(); });
+    ghostSets.forEach(g=>g.nodes.forEach(n=>{ n.style.display='none'; ghostLayer.appendChild(n); }));
+    svg.style.opacity=''; svg.style.transform=''; all.style.transform=''; all.style.transformOrigin='';
+    fxShadows.style.display=''; fxSparks.style.display=''; glowLayer.style.display='';
+    intro.querySelector('#fxTrails').style.display=''; intro.querySelector('#fxRings').style.display=''; intro.querySelector('#fxGlint').style.display='none';
+    spr.A.style.shapeRendering='';
+    intro.style.background=''; intro.style.pointerEvents=''; intro.classList.remove('playing');
+    started=false; done=false; FX.start=undefined;
+    draw(TK.f0);
+    root.classList.add('gate'); gated=true; scrollTo(0,0);
+    scene.style.opacity=''; scene.style.transform=''; scene.style.transition=''; scene.style.cursor=''; scene.title=''; scene.onclick=null;
+    flatDie(); cube.classList.remove('lit'); posed=false;
+  }
+  function finish(skipped){
+    if(done) return; done=true; cancelAnimationFrame(raf);
+    const sc=document.querySelector('.scene'); sc.style.cursor='pointer'; sc.title='Back to the start';
+    const dieTitle=()=>{ sc.title=scrollY>4?'Back to the top':'Back to the start'; };
+    sc.onclick=()=>{ if(scrollY>4){ scrollTo({top:0,behavior:reduce?'auto':'smooth'}); } else backToStart(); };
+    addEventListener('scroll',dieTitle,{passive:true}); dieTitle();
+    const mark=document.querySelector('.bar .mark');
+    if(mark&&!mark.dataset.wired){ mark.dataset.wired=1;
+      const markTitle=()=>{ mark.title=scrollY>4?'Back to the top':'Back to the start'; };
+      mark.addEventListener('click',e=>{ if(gated) return; e.preventDefault(); if(scrollY>4) scrollTo({top:0,behavior:reduce?'auto':'smooth'}); else backToStart(); });
+      addEventListener('scroll',markTitle,{passive:true}); markTitle(); }
+    root.classList.remove('gate');
+    scene.style.opacity=1;
+    scene.getAnimations().forEach(x=>x.cancel()); scene.style.transform=''; scene.style.transition='';
+    intro.remove();
+    gated=false;
+    requestAnimationFrame(()=>{ cube.style.transition=''; if(typeof snapRoll==='function') snapRoll();
+      if(posed){ current=1; spins=0; rolled.textContent=1; rollName.textContent=rolls[0].dataset.name; document.body.style.setProperty('--gy','38%'); onFace(1); }   // already showing face 1: no extra roll
+      else { current=-1; spins=0; }
+      update(); layoutTrack(); placeB(); });
+  }
+
+
+  /* copy the studio's email address (for anyone without a mail app set up) */
+  document.querySelectorAll('.contact-copy').forEach(b=>b.addEventListener('click',()=>{
+    const mail=b.dataset.mail, tip=b.querySelector('.tip');
+    const ok=()=>{ b.classList.add('done'); tip.textContent='Copied'; clearTimeout(b._t); b._t=setTimeout(()=>{ b.classList.remove('done'); tip.textContent='Copy email'; },1800); };
+    const fallback=()=>{ const t=document.createElement('textarea'); t.value=mail; t.style.cssText='position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try{ if(document.execCommand('copy')) ok(); }catch(e){} t.remove(); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(mail).then(ok,fallback); else fallback();
+  }));
+  let startV='a'; try{ startV=localStorage.getItem('dsLayout')||'a'; }catch(e){}
+  let startDV='dock'; try{ startDV=localStorage.getItem('dsDock')||'dock'; }catch(e){}
+  root.dataset.dv='roll';
+  applyLayout('g',true); applyDock(root.dataset.dv);
+  update();
+})();
+</script>
+</body>
+</html>
