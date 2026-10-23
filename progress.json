@@ -1,0 +1,40 @@
+{
+  "intro": "Working towards a playable prototype to test whether enough people want this game.",
+  "updated": "2026-10-23",
+  "cadence": "Updated monthly",
+  "tasks": [
+    {
+      "name": "Player character model",
+      "percent": 80,
+      "note": "Rigging and procedural animation left"
+    },
+    {
+      "name": "Player controller",
+      "percent": 10,
+      "note": "Many, many bugs. Not up to standard yet"
+    },
+    {
+      "name": "Prologue level design",
+      "percent": 0,
+      "note": ""
+    }
+  ],
+  "overall": {
+    "name": "Radiated Legacy",
+    "percent": 10,
+    "milestones": [
+      {
+        "label": "Prototype",
+        "share": 10
+      },
+      {
+        "label": "Prologue",
+        "share": 20
+      },
+      {
+        "label": "Chapters I–VIII",
+        "share": 70
+      }
+    ]
+  }
+}

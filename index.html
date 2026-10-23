@@ -232,6 +232,48 @@ footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;paddin
 
 .roll h2.hello{font-family:var(--f-mono);font-weight:400;letter-spacing:-.02em;font-size:clamp(1.25rem,6vw,3.1rem);line-height:1.2;white-space:nowrap}
 .roll h2.hello em{font-style:normal;color:var(--blood)}
+
+.cta-row{margin-top:.4rem}
+.cta-btn{display:inline-flex;align-items:center;gap:.7rem;height:52px;padding:0 1.3rem;border-radius:12px;text-decoration:none;font:500 .82rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--blood);color:var(--chalk);background:var(--maroon);transition:background .2s,box-shadow .2s,transform .2s;align-self:flex-start}
+.cta-btn svg{width:18px;height:18px;transition:transform .2s}
+.cta-btn:hover,.cta-btn:focus-visible{background:var(--blood);box-shadow:0 0 18px rgba(184,20,28,.45)}
+.cta-btn[data-go]:hover svg{transform:translateY(3px)}
+.cta-btn[target]:hover svg{transform:translate(2px,-2px)}
+.roll a.inline{color:var(--chalk);text-decoration:underline;text-decoration-color:var(--blood);text-underline-offset:.2em}
+.roll a.inline:hover{color:#fff}
+.roll strong{color:var(--chalk);font-weight:500}
+.sub{font:500 .9rem var(--f-display);letter-spacing:.16em;text-transform:uppercase;margin:0 0 .5rem;color:var(--chalk)}
+.slot p.genre{font:500 .7rem/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blood)}
+
+.chap{margin-top:.6rem}
+.chapters{list-style:none;margin:.8rem 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px;counter-reset:none}
+.chapters li{display:grid;place-items:center;min-width:2.6rem;height:2.6rem;padding:0 .6rem;border:1px solid var(--line);border-radius:8px;background:var(--coal);font:500 .8rem var(--f-mono);letter-spacing:.08em;color:var(--mute)}
+.chapters li.free{border-color:var(--blood);background:var(--maroon);color:var(--chalk);grid-auto-flow:column;gap:.5rem;padding:0 .8rem}
+.chapters li.free small{font:500 .56rem var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:#f0b3b6}
+
+.tracker{display:grid;gap:1.1rem;margin-top:.4rem;max-width:40rem}
+.trk-top{display:flex;justify-content:space-between;gap:1rem;font-size:.95rem;color:var(--chalk)}
+.trk-top b{font:500 .78rem var(--f-mono);letter-spacing:.08em;color:var(--blood);white-space:nowrap}
+.trk-top b.idle{color:var(--mute)}
+.pbar{position:relative;height:6px;border-radius:6px;background:var(--graphite);overflow:hidden;margin-top:.45rem}
+.pbar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:6px;background:linear-gradient(90deg,var(--maroon),var(--blood));box-shadow:0 0 10px rgba(184,20,28,.5);transition:width 1.1s cubic-bezier(.2,.8,.2,1)}
+.roll.active .pbar i,.roll.seen .pbar i{width:var(--p)}
+.trk small{display:block;margin-top:.4rem;font:500 .62rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.trk-overall{border:1px solid var(--maroon);background:var(--coal);border-radius:12px;padding:1rem 1.1rem 1.1rem}
+.trk-overall .pbar{height:10px}
+.trk-overall .pbar u{position:absolute;top:0;bottom:0;width:1px;background:var(--black);text-decoration:none;z-index:1}
+.miles{display:flex;justify-content:space-between;gap:.5rem;margin-top:.5rem;font:500 .58rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.miles span.on{color:var(--blood)}
+.trk-upd{font:500 .62rem var(--f-mono)!important;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)!important}
+@media (prefers-reduced-motion:reduce){.pbar i{transition:none}}
+
+.fund,.never{margin-top:.8rem}
+.fund-opts{list-style:none;margin:.9rem 0 1.1rem;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.fund-opts li{padding:.55rem .9rem;border:1px solid var(--line);border-radius:999px;background:var(--coal);font:500 .7rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--chalk)}
+.never ul{list-style:none;margin:0;padding:0;display:grid;gap:.55rem;max-width:58ch}
+.never li{position:relative;padding-left:1.5rem;color:#c3bcba}
+.never li::before{content:"";position:absolute;left:.15rem;top:.55em;width:.5rem;height:.5rem;background:var(--blood);transform:rotate(45deg)}
+.never li b{color:var(--chalk);font-weight:500}
 .roll p.hello-out{font-family:var(--f-mono);color:var(--blood);font-size:clamp(.95rem,3.2vw,1.35rem);letter-spacing:.02em;margin:-.2em 0 1.4em;opacity:0;transform:translateY(-4px);transition:opacity .35s,transform .35s}
 .roll p.hello-out.on{opacity:1;transform:none}
 
@@ -604,80 +646,83 @@ html.dragdie,html.dragdie *{cursor:grabbing!important;user-select:none}
   </aside>
 
   <main class="content">
-    <section class="roll" id="studio" data-face="1" data-name="The studio">
+    <section class="roll" id="studio" data-face="1" data-name="The Studio">
       <div class="chip" data-n="1" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="slot3d" id="slot3d"></div>
       <div class="grand-space" aria-hidden="true"></div>
-      <span class="kick"><b>01</b> The studio</span>
+      <span class="kick"><b>01</b> The Studio</span>
       <h2 class="hello"><span class="code">print(<em>"Hello, World!"</em>)</span></h2>
       <p class="hello-out" aria-hidden="true">Hello, World!</p>
       <p>Die Software is an independent game studio from Australia with a singular goal: making games driven by story and atmosphere, worlds you can get lost in and stories that stay with you long after you put the controller down. Games where quality comes first and community actually matters, a place where everyone has a seat at the table. Are you ready to roll with us?</p>
+      <div class="cta-row"><a class="cta-btn" href="#follow" data-go="6"><span>Join the community</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>
     </section>
 
-    <section class="roll" data-face="2" data-name="Why it exists">
+    <section class="roll" id="dev" data-face="2" data-name="The Dev">
       <div class="chip" data-n="2" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="kick"><b>02</b> Why it exists</span>
-      <span class="draft">Draft copy</span>
-      <h2>Games where every choice <em>costs</em> something.</h2>
-      <p>The studio started from a simple frustration: too many games let you play it safe forever. Die Software makes games that ask you to commit.</p>
-      <div class="principles">
-        <div><h3>Risk</h3><p>Every decision has a price, and you pay it.</p></div>
-        <div><h3>Consequence</h3><p>What you leave behind carries forward.</p></div>
-        <div><h3>Craft</h3><p>Small studio, no shortcuts, every system built by hand.</p></div>
-      </div>
+      <span class="kick"><b>02</b> The Dev</span>
+      <h2>The ultimate creative <em>outlet</em>.</h2>
+      <p>I started making games because it's the ultimate creative outlet: the chance to build anything, with the only limit being imagination. Worlds people can step into and enjoy to the fullest.</p>
+      <p>My dream is for Die Software to become more than one dev. I want it to be a collective, a community of people who make games for the love of it, not for investors or profit margins. Games for enjoyment, learning, challenge and entertainment. Creating good games, not corporate investments or crypto cash-grabs.</p>
+      <p>Over the next few years, that means growing this community and getting deep into our first title, <a class="inline" href="#projects" data-go="3">Radiated Legacy</a>. The Prologue is aiming for 2027, with Chapter I fully released and Chapter II in development by 2028.</p>
+      <p>Success, for me, is the privilege of building worlds full-time. For Die Software, it's bringing back real game ownership: something worth its weight that's yours to keep, without a $100+ price tag. We exist to create, not to chase record profits, but we can't do it without you.</p>
     </section>
 
-    <section class="roll" data-face="3" data-name="Behind the die">
+    <section class="roll" id="projects" data-face="3" data-name="Projects">
       <div class="chip" data-n="3" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="kick"><b>03</b> Behind the die</span>
-      <span class="draft">Draft copy</span>
-      <h2>One developer. No face, <em>just the games</em>.</h2>
-      <p>Die Software is a one-person studio. Design, programming, art and sound all come from a single desk, and the person rolling the dice would rather you knew the games than the name. This page follows the studio as it grows, from the first game to the ones after it.</p>
-    </section>
-
-    <section class="roll" id="projects" data-face="4" data-name="In development">
-      <div class="chip" data-n="4" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="kick"><b>04</b> Projects</span>
-      <span class="draft">Example entries</span>
-      <h2>On the table <em>now</em></h2>
+      <span class="kick"><b>03</b> Projects</span>
+      <h2>On the table <em>now</em>.</h2>
       <div class="slots">
         <article class="slot live">
           <div class="num">01</div>
           <div class="body">
-            <div class="meta"><span class="st">● In development</span><span>Survival</span><span>PC</span></div>
+            <div class="meta"><span class="st">● Prototype</span><span>PC</span></div>
             <h3>Radiated Legacy</h3>
-            <p>Survive the fallout and decide what the next generation inherits. The studio's first full game.</p>
-            <div class="tasks">
-              <div><span>Enemy AI pathfinding</span><em class="hot">In progress</em></div>
-              <div><span>Inventory and weight system</span><em>Testing</em></div>
-              <div><span>Fallout storms</span><em>Queued</em></div>
-            </div>
+            <p class="genre">First-person action-adventure puzzle-platforming survival-horror shooter. (That's a mouthful.)</p>
+            <p>Inspired by Tomb Raider, Metro and S.T.A.L.K.E.R., Radiated Legacy isn't your standard FPS or survival horror. Its unorthodox controls and mechanics add real depth. Know how to reload a pistol? Get ready to learn. You'll need to, to survive out here.</p>
           </div>
         </article>
-        <article class="slot locked">
-          <div class="num">02</div>
-          <div class="body"><div class="meta"><span>Unannounced</span></div><h3>Next roll</h3><p>Not rolled yet. Follow along to see it first.</p></div>
-        </article>
       </div>
+      <div class="chap">
+        <h3 class="sub">Told in chapters</h3>
+        <p>Every chapter is a game in its own right, with at least 5 hours of play.</p>
+        <ol class="chapters" aria-label="Prologue, then chapters one to eight"><li class="free"><b>Prologue</b><small>Free</small></li><li><b>I</b></li><li><b>II</b></li><li><b>III</b></li><li><b>IV</b></li><li><b>V</b></li><li><b>VI</b></li><li><b>VII</b></li><li><b>VIII</b></li></ol>
+      </div>
+      <p><strong>Fair pricing.</strong> The Prologue is free: play it and help shape the game with your feedback. After that, buy early and pay less. Every future chapter is included as a free update, and the price only rises as new chapters release, so the earliest supporters get the whole journey for the lowest price.</p>
     </section>
 
-    <section class="roll" data-face="5" data-name="What's next">
+    <section class="roll" id="progress" data-face="4" data-name="In Progress">
+      <div class="chip" data-n="4" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="kick"><b>04</b> In Progress</span>
+      <h2>What's on the <em>bench</em>.</h2>
+      <p id="trkIntro"></p>
+      <div class="tracker" id="tracker" aria-live="polite"></div>
+      <script type="application/json" id="progressData">{"intro": "Working towards a playable prototype to test whether enough people want this game.", "updated": "2026-10-23", "cadence": "Updated monthly", "tasks": [{"name": "Player character model", "percent": 80, "note": "Rigging and procedural animation left"}, {"name": "Player controller", "percent": 10, "note": "Many, many bugs. Not up to standard yet"}, {"name": "Prologue level design", "percent": 0, "note": ""}], "overall": {"name": "Radiated Legacy", "percent": 10, "milestones": [{"label": "Prototype", "share": 10}, {"label": "Prologue", "share": 20}, {"label": "Chapters I–VIII", "share": 70}]}}</script>
+    </section>
+
+    <section class="roll" id="vision" data-face="5" data-name="The Vision">
       <div class="chip" data-n="5" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="kick"><b>05</b> What's next</span>
-      <span class="draft">Example entries</span>
-      <h2>Where the studio is <em>heading</em></h2>
-      <div class="tasks">
-        <div><span>Radiated Legacy public playtest</span><em class="hot">Planned</em></div>
-        <div><span>Monthly devlog series</span><em>Planned</em></div>
-        <div><span>Studio Discord community</span><em>Planned</em></div>
-        <div><span>Second game prototype</span><em>Concept</em></div>
+      <span class="kick"><b>05</b> The Vision</span>
+      <h2>Games, not <em>investments</em>.</h2>
+      <p>In five years, Die Software will be making more games and growing a community that inspires passion, creation and creativity. We want to grow as a team dedicated to the craft and making games worth playing, backed by a community that values what we do, not a board of corporate investors.</p>
+      <div class="fund">
+        <h3 class="sub">Help us decide how we're funded</h3>
+        <p>Die Software is self-funded. Liking, following and sharing is more than enough. But if you'd like to support the studio, which of these should we pursue?</p>
+        <ul class="fund-opts"><li>Merch</li><li>Ko-fi</li><li>Patreon</li><li>Crowdfunding</li></ul>
+        <a class="cta-btn" href="https://discord.gg/Z8xbE54SmW" target="_blank" rel="noopener"><span>Vote in our Discord</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+      <div class="never">
+        <h3 class="sub">What we'll never do</h3>
+        <ul>
+          <li><b>Sign with a publisher.</b> We won't let corporate interests drive the games.</li>
+          <li><b>Sell the studio.</b> We'd rather close than sell out on our values.</li>
+        </ul>
       </div>
     </section>
 
-    <section class="roll" id="follow" data-face="6" data-name="Follow">
+    <section class="roll" id="follow" data-face="6" data-name="Join Our Community">
       <div class="chip" data-n="6" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <span class="kick"><b>06</b> Follow</span>
-      <h2>Natural six. <em>Follow the studio.</em></h2>
+      <span class="kick"><b>06</b> Join Our Community</span>
+      <h2>Natural six. <em>Join the community.</em></h2>
       <p>Devlogs, clips, playtest invites and the first look at every new game go out here first.</p>
       <nav class="socials" aria-label="Social links"><a href="https://discord.gg/Z8xbE54SmW" target="_blank" rel="noopener" aria-label="Die Software on Discord" title="Discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a><a href="https://www.youtube.com/@DieSoftwareOfficial" target="_blank" rel="noopener" aria-label="Die Software on YouTube" title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><a href="https://www.tiktok.com/@die.software" target="_blank" rel="noopener" aria-label="Die Software on TikTok" title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a><a href="https://www.instagram.com/die.software/" target="_blank" rel="noopener" aria-label="Die Software on Instagram" title="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg></a><a href="https://www.facebook.com/share/19ey6TybyG/" target="_blank" rel="noopener" aria-label="Die Software on Facebook" title="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg></a></nav>
       <div class="contact"><a class="contact-btn" href="mailto:die.software.official+website@gmail.com?subject=Hello%20Die%20Software"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.8 7 8.2 6.2L20.2 7"/></svg><span>Contact us</span></a><button class="contact-copy" type="button" data-mail="die.software.official@gmail.com" aria-label="Copy the email address die.software.official@gmail.com" title="Copy email address"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg><span class="tip" aria-live="polite">Copy email</span></button></div>
@@ -1581,6 +1626,34 @@ window.LOGO_TRACKS={"f0":-40,"q":4,"pi":[-3256.12,61.11,-180.0,-3531.21,61.11,-1
     const fallback=()=>{ const t=document.createElement('textarea'); t.value=mail; t.style.cssText='position:fixed;opacity:0'; document.body.appendChild(t); t.select(); try{ if(document.execCommand('copy')) ok(); }catch(e){} t.remove(); };
     if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(mail).then(ok,fallback); else fallback();
   }));
+
+  document.querySelectorAll('[data-go]').forEach(a=>a.addEventListener('click',e=>{
+    const n=+a.dataset.go, dk=document.querySelector('.dk[data-n="'+n+'"]');
+    e.preventDefault(); a.blur();
+    if(dk&&dk.offsetParent!==null){ dk.click(); return; }       // same as tapping that face on the dock
+    const r=rolls[n-1], bar=document.querySelector('.bar'); if(!r) return;
+    scrollTo({top:Math.max(0,r.getBoundingClientRect().top+scrollY-(bar?bar.offsetHeight:0)-8),behavior:reduce?'auto':'smooth'});
+  }));
+
+  const trk=document.getElementById('tracker'), trkIntro=document.getElementById('trkIntro');
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function drawProgress(d){
+    if(!trk||!d) return;
+    const pct=v=>Math.max(0,Math.min(100,+v||0));
+    let h='';
+    (d.tasks||[]).forEach(t=>{ const v=pct(t.percent), idle=!v;
+      h+=`<div class="trk"><div class="trk-top"><span>${esc(t.name)}</span><b class="${idle?'idle':''}">${idle?'Not started':v+'%'}</b></div><div class="pbar" role="progressbar" aria-label="${esc(t.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}"><i style="--p:${v}%"></i></div>${t.note?`<small>${esc(t.note)}</small>`:''}</div>`; });
+    const o=d.overall||{}, ov=pct(o.percent), ms=o.milestones||[];
+    let ticks='', acc=0; ms.slice(0,-1).forEach(m=>{ acc+=+m.share||0; ticks+=`<u style="left:${acc}%"></u>`; });
+    let reached=0; const miles=ms.map(m=>{ reached+=+m.share||0; return `<span class="${ov>reached-(+m.share||0)?'on':''}">${esc(m.label)}</span>`; }).join('');
+    h+=`<div class="trk-overall"><div class="trk-top"><span>${esc(o.name||'Overall')} overall</span><b>${ov}%</b></div><div class="pbar" role="progressbar" aria-label="${esc(o.name||'Overall')} overall" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ov}"><i style="--p:${ov}%"></i>${ticks}</div><div class="miles">${miles}</div></div>`;
+    if(d.updated){ const dt=new Date(d.updated+'T00:00:00'); const nice=isNaN(dt)?esc(d.updated):dt.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+      h+=`<p class="trk-upd">${esc(d.cadence||'Updated monthly')} · Last update: <time datetime="${esc(d.updated)}">${nice}</time></p>`; }
+    trk.innerHTML=h;
+    if(trkIntro) trkIntro.textContent=d.intro||'';
+  }
+  try{ drawProgress(JSON.parse(document.getElementById('progressData').textContent)); }catch(e){}
+  if(/^https?:$/.test(location.protocol)) fetch('progress.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{ if(d) drawProgress(d); }).catch(()=>{});
 
   const grand=document.getElementById('grand'), gSpace=document.querySelector('.grand-space'), mText=document.querySelector('.mark-text');
   function placeGrand(){
