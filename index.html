@@ -769,9 +769,10 @@ window.LOGO_TRACKS={"f0":-40,"q":4,"pi":[-3256.12,61.11,-180.0,-3531.21,61.11,-1
     if(V()!=='g') return;
     const k=Math.max(1,n||1), D=scene.offsetWidth, a=dks[0].getBoundingClientRect();
     if(!baseW||!dks[0].style.width) baseW=dks[0].offsetWidth;
-    stageIn.style.left=(a.left+a.width/2-D/2)+'px'; stageIn.style.top=(a.top+a.height/2-D/2)+'px';
     dNum.textContent=String(k).padStart(2,'0'); dTxt.textContent=rolls[k-1].dataset.name;
-    if(DV()==='roll'){ placeRoll(); return; }
+    if(DV()==='roll'&&!gated){ placeRoll(); return; }       // rolling: placeRoll alone pins the die, the same way as the dock
+    stageIn.style.bottom=''; stageIn.style.left=(a.left+a.width/2-D/2)+'px'; stageIn.style.top=(a.top+a.height/2-D/2)+'px';
+    if(DV()==='roll') return;
     const b=dks[k-1].getBoundingClientRect(), sc=b.width/baseW;
     const dx=(b.left+b.width/2)-(a.left+a.width/2), dy=(b.top+b.height/2)-(a.top+a.height/2);
     if(instant) stageIn.style.transition='none';
